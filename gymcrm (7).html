@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio 8:7 — GYM TRAINING</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0a; --surface: #111111; --surface2: #1a1a1a;
+    --text: #f0f0f0; --text2: #a0a0a0; --text3: #606060;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.04);
+    --accent: #E8001C;
+    --green: #4ade80; --green-bg: #052e16; --green-text: #86efac;
+    --amber: #fbbf24; --amber-bg: #1c1000; --amber-text: #fde68a;
+    --red: #E8001C; --red-bg: #1a0005; --red-text: #fca5a5;
+    --blue: #60a5fa; --blue-bg: #0c1a2e; --blue-text: #93c5fd;
+    --purple: #a78bfa; --purple-bg: #1a0e2e; --purple-text: #c4b5fd;
+    --r: 6px; --rl: 10px;
+  }
+  body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .app { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; background: var(--surface); border-right: 0.5px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; position: fixed; top: 0; bottom: 0; left: 0; z-index: 20; transition: width 0.3s ease; }
+  .sidebar.ocultar { width: 0; overflow: hidden; }
+  .toggle-btn {
+    min-width: 0;
+    
+}
+.toggle-btn.expandido {
+    margin-left: 0;
+}
+.show-btn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 30;
+
+    display: none;
+
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.show-btn.visible {
+    display: block;
+}
+.main {
+    flex: 1;
+    margin-left: 220px;
+    min-width: 0;
+    transition: margin-left 0.3s ease;
+}
+
+.main.expandido {
+    margin-left: 0;
+}
+
+  .logo { padding: 20px 20px 16px; border-bottom: 0.5px solid var(--border2); }
+  .logo-mark { font-size: 18px; font-weight: 600; letter-spacing: -0.5px; color: var(--text); }
+  .logo-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .nav { padding: 12px 8px; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--r); cursor: pointer; font-size: 14px; color: var(--text2); transition: all 0.15s; margin-bottom: 2px; border: none; background: none; width: 100%; text-align: left; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--accent); color: var(--bg); }
+  .alerts-badge { margin-left: auto; background: #E24B4A; color: #fff; font-size: 10px; font-weight: 600; border-radius: 10px; padding: 1px 6px; }
+  .main { flex: 1; margin-left: 220px; min-width: 0; }
+  
+  .topbar { padding: 16px 24px; border-bottom: 0.5px solid var(--border2); display: flex; align-items: center; justify-content: space-between; background: var(--surface); position: sticky; top: 0; z-index: 10; }
+  .topbar-title { font-size: 16px; font-weight: 500; }
+  .content { padding: 24px; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .metric { background: var(--surface2); border-radius: var(--r); padding: 16px; }
+  .metric-label { font-size: 12px; color: var(--text3); margin-bottom: 6px; }
+  .metric-value { font-size: 24px; font-weight: 500; color: var(--text); }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .section-title { font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .alert-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--rl); padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; cursor: pointer; }
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .alert-dot.red { background: #E24B4A; }
+  .alert-dot.amber { background: #EF9F27; }
+  .alert-dot.blue { background: #378ADD; }
+  .table-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--rl); overflow: hidden; }
+  .table-header { padding: 14px 16px; border-bottom: 0.5px solid var(--border2); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .table-search { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 0.5px solid var(--border); border-radius: var(--r); padding: 6px 10px; }
+  .table-search input { border: none; background: none; outline: none; font-size: 13px; color: var(--text); width: 160px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 0.5px solid var(--border2); }
+  td { padding: 12px 16px; border-bottom: 0.5px solid var(--border2); color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--surface2); cursor: pointer; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge.activo { background: var(--green-bg); color: var(--green-text); }
+  .badge.inactivo { background: var(--surface2); color: var(--text3); }
+  .badge.pendiente { background: var(--amber-bg); color: var(--amber-text); }
+  .badge.pagado { background: var(--green-bg); color: var(--green-text); }
+  .badge.mensual { background: var(--blue-bg); color: var(--blue-text); }
+  .badge.trimestral { background: var(--purple-bg); color: var(--purple-text); }
+  .badge.anual { background: var(--amber-bg); color: var(--amber-text); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--r); font-size: 13px; cursor: pointer; border: 0.5px solid var(--border); background: var(--surface2); color: var(--text); transition: all 0.15s; }
+  .btn:hover { background: var(--surface); }
+  .btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .btn.primary:hover { opacity: 0.85; }
+  .btn.small { padding: 4px 10px; font-size: 12px; }
+  .btn.danger { background: var(--red-bg); color: var(--red-text); border-color: transparent; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .modal { background: var(--surface); border-radius: var(--rl); padding: 24px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; border: 0.5px solid var(--border); }
+  .modal-title { font-size: 16px; font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12px; color: var(--text2); margin-bottom: 5px; display: block; }
+  .form-input { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border); border-radius: var(--r); background: var(--surface2); color: var(--text); font-size: 13px; outline: none; }
+  .form-input:focus { border-color: var(--blue); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  .detail-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 16px; background: var(--blue-bg); color: var(--blue-text); flex-shrink: 0; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .detail-field { background: var(--surface2); border-radius: var(--r); padding: 12px; }
+  .detail-field-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .detail-field-value { font-size: 14px; color: var(--text); font-weight: 500; }
+  .history-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--border2); }
+  .history-item:last-child { border-bottom: none; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 0.5px solid var(--border2); }
+  .tab { padding: 8px 16px; font-size: 13px; cursor: pointer; color: var(--text2); border-bottom: 2px solid transparent; margin-bottom: -0.5px; transition: all 0.15s; background: none; border-top: none; border-left: none; border-right: none; }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 500; }
+  .empty { padding: 32px; text-align: center; color: var(--text3); font-size: 14px; }
+  .loading { padding: 48px; text-align: center; color: var(--text3); font-size: 14px; }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--accent); color: var(--bg); padding: 12px 18px; border-radius: var(--r); font-size: 13px; z-index: 200; animation: fadeIn 0.2s ease; }
+  .toast.error { background: #A32D2D; color: #FCEBEB; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 999; }
+  .login-box { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--rl); padding: 36px 32px; width: 360px; max-width: 95vw; }
+  .login-logo { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .login-sub { font-size: 13px; color: var(--text3); margin-bottom: 28px; }
+  .login-error { background: var(--red-bg); color: var(--red-text); border-radius: var(--r); padding: 10px 12px; font-size: 13px; margin-bottom: 14px; display: none; }
+  .login-footer { margin-top: 16px; font-size: 12px; color: var(--text3); text-align: center; }
+  .doc-upload-area { border: 1.5px dashed var(--border); border-radius: var(--r); padding: 18px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--surface2); }
+  .doc-upload-area:hover { border-color: var(--blue); background: var(--blue-bg); }
+  .doc-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--surface2); border-radius: var(--r); margin-bottom: 6px; border: 0.5px solid var(--border2); }
+  .doc-item-name { flex: 1; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .doc-item-type { font-size: 11px; color: var(--text3); flex-shrink: 0; background: var(--surface); padding: 2px 6px; border-radius: 4px; }
+
+  /* STUDIO 8:7 OVERRIDES */
+  body { font-family: 'Arial Black', Arial, sans-serif; }
+  .logo-mark { font-size: 20px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+  .nav-item { text-transform: uppercase; font-size: 11px; letter-spacing: 1px; font-weight: 700; }
+  .nav-item.active { background: #E8001C !important; color: #fff !important; }
+  .topbar { border-bottom: 1px solid #E8001C22; }
+  /* .sidebar { border-right: 1px solid #E8001C22; } */
+  .section-title { color: #E8001C; letter-spacing: 2px; }
+  .metric { border: 0.5px solid rgba(255,255,255,0.06); }
+  .metric-value { font-weight: 900; }
+  .btn.primary { background: #E8001C; border-color: #E8001C; color: #fff; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .btn.primary:hover { background: #c0001a; opacity: 1; }
+  .badge.activo { background: #052e16; color: #4ade80; }
+  .badge.mensual { background: #0c1a2e; color: #60a5fa; }
+  .badge.trimestral { background: #1a0e2e; color: #a78bfa; }
+  .badge.anual { background: #1a0a00; color: #fb923c; }
+  .alert-dot.red { background: #E8001C; }
+  .alert-dot.amber { background: #fbbf24; }
+  .alert-dot.blue { background: #60a5fa; }
+  .login-box { border: 1px solid #E8001C44; }
+  .login-logo { font-weight: 900; letter-spacing: 1px; text-transform: uppercase; font-size: 32px; }
+  .cal-day.present { background: #E8001C; }
+  .cal-day.today { outline-color: #fff; }
+  table thead tr { border-bottom: 1px solid #E8001C33; }
+  th { color: #E8001C; }
+
+  /* CALENDARIO ASISTENCIA */
+  .cal-wrap { user-select: none; }
+  .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .cal-month { font-size: 15px; font-weight: 500; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-dow { font-size: 11px; color: var(--text3); text-align: center; padding: 4px 0; font-weight: 500; }
+  .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 13px; cursor: pointer; transition: all 0.1s; border: none; background: none; color: var(--text); }
+  .cal-day:hover { background: var(--surface2); }
+  .cal-day.present { background: var(--accent); color: var(--bg); font-weight: 600; }
+  .cal-day.today { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .cal-day.empty { cursor: default; pointer-events: none; }
+  .cal-day.future { color: var(--text3); cursor: default; pointer-events: none; }
+  .cal-legend { display: flex; gap: 16px; margin-top: 12px; font-size: 12px; color: var(--text3); }
+  .cal-legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">STUDIO <span style="color:#E8001C">8:7</span></div>
+    <div class="login-sub" style="letter-spacing:2px;font-size:11px;text-transform:uppercase">GYM TRAINING</div>
+    <div class="login-error" id="login-error"></div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="login-email" type="email" placeholder="tu@email.com" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <input class="form-input" id="login-pass" type="password" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <button class="btn primary" style="width:100%;justify-content:center;margin-top:4px" id="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-footer">Studio 8:7 · Solo para uso autorizado</div>
+  </div>
+</div>
+
+<div class="app">
+  
+  <aside class="sidebar" id="sidebar">
+  
+    <button id="toggleSidebar" class="toggle-btn">O-</button>
+    <div class="logo">
+      <div class="logo-mark">STUDIO <span style="color:#E8001C">8:7</span></div>
+      <div class="logo-sub" style="letter-spacing:2px;font-size:10px">GYM TRAINING</div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    
+  </aside>
+  <button id="showSidebar" class="show-btn">
+        ☰
+    </button>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="topbar-date" id="topbar-date"></div>
+        <button class="btn small" onclick="doLogout()"><i class="ti ti-logout" aria-hidden="true"></i> Salir</button>
+      </div>
+    </div>
+    <div class="content" id="content"><div class="loading">Conectando...</div></div>
+  </div>
+</div>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// CONFIGURACIÓN — pega aquí tus credenciales
+// ─────────────────────────────────────────────
+const SUPABASE_URL = 'https://gfsofbjhmorkgegnbsli.supabase.co/';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdmc29mYmpobW9ya2dlZ25ic2xpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDEzMDUwMywiZXhwIjoyMDk1NzA2NTAzfQ.vJsNUZUeLZZuMheh-cFm-Zl2aMzzbsDzXyN8LnyJkZo';
+// ─────────────────────────────────────────────
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const today = new Date();
+const fmt = d => new Date(d).toLocaleDateString('es-ES', {day:'2-digit',month:'2-digit',year:'numeric'});
+const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate()+n); return r; };
+const diffDays = (a, b) => Math.round((new Date(b)-new Date(a))/86400000);
+const fileIcon = name => {
+  const ext = (name||'').split('.').pop().toLowerCase();
+  if(['jpg','jpeg','png','gif','webp'].includes(ext)) return 'ti-photo';
+  if(['pdf'].includes(ext)) return 'ti-file-type-pdf';
+  if(['doc','docx'].includes(ext)) return 'ti-file-type-doc';
+  return 'ti-file';
+};
+
+document.getElementById('topbar-date').textContent = today.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+let state = {
+  view: 'dashboard', clientTab: 'info',
+  selectedClient: null, searchClients: '', searchPayments: '',
+  showModal: null, clients: [], pagos: [], asistencia: [], searchAsistencia: '', clienteAsistencia: null,
+  productos: [], ventas: [], searchProductos: '',
+};
+
+// ── Toast ──
+function toast(msg, type='ok') {
+  const el = document.createElement('div');
+  el.className = 'toast' + (type==='error'?' error':'');
+  el.textContent = msg;
+  document.getElementById('toast-root').appendChild(el);
+  setTimeout(()=>el.remove(), 3000);
+}
+
+// ── Carga datos ──
+async function loadAll() {
+  const [{data:clients,error:e1},{data:pagos,error:e2},{data:asistencia,error:e3},{data:productos,error:e4},{data:ventas,error:e5}] = await Promise.all([
+    db.from('clientes').select('*').order('created_at',{ascending:false}),
+    db.from('pagos').select('*').order('fecha',{ascending:false}),
+    db.from('asistencia').select('*').order('fecha',{ascending:false}),
+    db.from('productos').select('*').order('nombre',{ascending:true}),
+    db.from('ventas').select('*').order('created_at',{ascending:false}),
+  ]);
+  if(e1||e2){toast('Error cargando datos','error');return;}
+  state.clients = clients||[];
+  state.pagos = pagos||[];
+  state.asistencia = asistencia||[];
+  state.productos = productos||[];
+  state.ventas = ventas||[];
+  render();
+}
+
+// ── Upload doc a Storage ──
+async function uploadDoc(file, folder) {
+  const ext = file.name.split('.').pop();
+  const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const {error} = await db.storage.from('documentos').upload(path, file);
+  if(error) throw error;
+  return { name: file.name, path, size: file.size, fecha: new Date().toISOString() };
+}
+
+async function getDocUrl(path) {
+  const {data} = await db.storage.from('documentos').createSignedUrl(path, 60);
+  return data?.signedUrl;
+}
+
+async function openDoc(path) {
+  const url = await getDocUrl(path);
+  if(url) window.open(url, '_blank');
+  else toast('No se pudo abrir el documento','error');
+}
+
+async function deleteDoc(clientId, path) {
+  if(!confirm('¿Eliminar este documento?')) return;
+  await db.storage.from('documentos').remove([path]);
+  const c = state.clients.find(x=>x.id===clientId);
+  const docs = (c.documentos||[]).filter(d=>d.path!==path);
+  await db.from('clientes').update({documentos:docs}).eq('id',clientId);
+  toast('Documento eliminado');
+  await loadAll();
+}
+
+async function deletePagoDoc(pagoId, path) {
+  if(!confirm('¿Eliminar este documento?')) return;
+  await db.storage.from('documentos').remove([path]);
+  const p = state.pagos.find(x=>x.id===pagoId);
+  const docs = (p.documentos||[]).filter(d=>d.path!==path);
+  await db.from('pagos').update({documentos:docs}).eq('id',pagoId);
+  toast('Documento eliminado');
+  await loadAll();
+}
+
+// ── Auth ──
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const btn   = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  errEl.style.display='none';
+  btn.disabled=true; btn.textContent='Entrando...';
+  const {error} = await db.auth.signInWithPassword({email, password:pass});
+  if(error){
+    errEl.textContent='Email o contraseña incorrectos';
+    errEl.style.display='block';
+    btn.disabled=false; btn.textContent='Entrar';
+    return;
+  }
+  showApp();
+}
+
+async function doLogout() {
+  await db.auth.signOut();
+  document.getElementById('login-screen').style.display='flex';
+  document.querySelector('.app').style.display='none';
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display='none';
+  document.querySelector('.app').style.display='flex';
+  loadAll();
+}
+
+// ── Nav ──
+const NAV = [
+  {id:'dashboard', icon:'ti-dashboard', label:'Dashboard'},
+  {id:'clients',   icon:'ti-users',     label:'Clientes'},
+  {id:'payments',  icon:'ti-credit-card',label:'Pagos'},
+  {id:'alerts',    icon:'ti-bell',      label:'Recordatorios'},
+  {id:'asistencia',icon:'ti-calendar-check',label:'Asistencia'},
+  {id:'inventario', icon:'ti-package',       label:'Inventario'},
+];
+
+function getAlerts() {
+  const alerts = [];
+  state.clients.forEach(c => {
+    if(c.estado!=='Activo') return;
+    const days = diffDays(today, new Date(c.cobro));
+    if(days===1)           alerts.push({type:'red',   msg:`⚠️ ${c.nombre} vence mañana`, id:c.id});
+    else if(days<=3&&days>=0) alerts.push({type:'amber', msg:`📅 ${c.nombre} vence en ${days} días`, id:c.id});
+    else if(days<0)        alerts.push({type:'red',   msg:`🔴 ${c.nombre} ha vencido hace ${Math.abs(days)} días`, id:c.id});
+    const pend = state.pagos.find(p=>p.cliente_id===c.id&&p.estado==='Pendiente');
+    if(pend) alerts.push({type:'amber', msg:`💳 ${c.nombre} no ha pagado (${fmt(pend.fecha)})`, id:c.id});
+    const meses = Math.floor(diffDays(new Date(c.inicio),today)/30);
+    if([3,6,12].includes(meses) && diffDays(new Date(c.inicio),today)%30<3)
+      alerts.push({type:'blue', msg:`🎉 ${c.nombre} cumple ${meses} meses entrenando`, id:c.id});
+  });
+  return alerts;
+}
+
+function renderNav() {
+  const alerts = getAlerts();
+  document.getElementById('nav').innerHTML = NAV.map(n=>`
+    <button class="nav-item ${state.view===n.id||(state.view==='client-detail'&&n.id==='clients')?'active':''}" onclick="navigate('${n.id}')">
+      <i class="ti ${n.icon}" aria-hidden="true"></i>${n.label}
+      ${n.id==='alerts'&&alerts.length?`<span class="alerts-badge">${alerts.length}</span>`:''}
+    </button>`).join('');
+}
+
+async function navigate(v) {
+  state.view=v; state.selectedClient=null;
+  document.getElementById('page-title').textContent=NAV.find(n=>n.id===v)?.label||'';
+  await loadAll();
+}
+
+function render() {
+  renderNav();
+  const el = document.getElementById('content');
+  if(state.view==='dashboard')     el.innerHTML=renderDashboard();
+  else if(state.view==='clients')  el.innerHTML=renderClients();
+  else if(state.view==='client-detail') el.innerHTML=renderClientDetail();
+  else if(state.view==='payments') el.innerHTML=renderPayments();
+  else if(state.view==='alerts')   el.innerHTML=renderAlerts();
+  else if(state.view==='asistencia') el.innerHTML=renderAsistencia();
+  else if(state.view==='inventario') el.innerHTML=renderInventario();
+}
+
+// ── Dashboard ──
+function renderDashboard() {
+  const activos = state.clients.filter(c=>c.estado==='Activo').length;
+  const pendientes = state.pagos.filter(p=>p.estado==='Pendiente').length;
+  const mes = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  const ingresos = state.pagos.filter(p=>p.estado==='Pagado'&&p.fecha.startsWith(mes)).reduce((a,p)=>a+Number(p.monto),0);
+  const vencen = state.clients.filter(c=>{const d=diffDays(today,new Date(c.cobro));return c.estado==='Activo'&&d>=0&&d<=7;}).length;
+  const alerts = getAlerts();
+  return `
+    <div class="metric-grid">
+      <div class="metric"><div class="metric-label">Clientes activos</div><div class="metric-value">${activos}</div><div class="metric-sub">de ${state.clients.length} totales</div></div>
+      <div class="metric"><div class="metric-label">Pagos pendientes</div><div class="metric-value" style="color:var(--amber)">${pendientes}</div><div class="metric-sub">sin cobrar</div></div>
+      <div class="metric"><div class="metric-label">Ingresos del mes</div><div class="metric-value">€${ingresos.toFixed(0)}</div><div class="metric-sub">${today.toLocaleDateString('es-ES',{month:'long',year:'numeric'})}</div></div>
+      <div class="metric"><div class="metric-label">Vencen esta semana</div><div class="metric-value" style="color:var(--red)">${vencen}</div><div class="metric-sub">próximos 7 días</div></div>
+      <div class="metric"><div class="metric-label">Asistencias hoy</div><div class="metric-value" style="color:var(--green)">${state.asistencia.filter(a=>a.fecha===today.toISOString().slice(0,10)).length}</div><div class="metric-sub">${today.toLocaleDateString('es-ES',{weekday:'long'})}</div></div>
+    </div>
+    ${alerts.length?`<div style="margin-bottom:24px"><div class="section-title">Recordatorios activos</div>${alerts.slice(0,4).map(a=>`
+      <div class="alert-card" onclick="openClient(${a.id})">
+        <div class="alert-dot ${a.type}"></div><div class="alert-msg">${a.msg}</div>
+        <i class="ti ti-chevron-right" style="color:var(--text3);font-size:14px" aria-hidden="true"></i>
+      </div>`).join('')}</div>`:''}
+    <div class="section-title" style="margin-bottom:10px">Próximos vencimientos</div>
+    <div class="table-card"><table>
+      <thead><tr><th>Cliente</th><th>Plan</th><th>Importe</th><th>Vence</th><th>Días</th></tr></thead>
+      <tbody>${state.clients.filter(c=>c.estado==='Activo').sort((a,b)=>new Date(a.cobro)-new Date(b.cobro)).slice(0,6).map(c=>{
+        const d=diffDays(today,new Date(c.cobro));
+        const color=d<0?'var(--red)':d<=3?'var(--amber)':'var(--text)';
+        const label=d<0?`hace ${Math.abs(d)}d`:d===0?'hoy':d===1?'mañana':`${d}d`;
+        return `<tr onclick="openClient(${c.id})"><td>${c.nombre}</td><td><span class="badge ${(c.plan||'').toLowerCase()}">${c.plan||'—'}</span></td><td>${c.importe?'€'+Number(c.importe).toFixed(2):'—'}</td><td>${fmt(c.cobro)}</td><td style="color:${color};font-weight:500">${label}</td></tr>`;
+      }).join('')||'<tr><td colspan="5" class="empty">Sin clientes activos</td></tr>'}</tbody>
+    </table></div>`;
+}
+
+// ── Clientes ──
+function renderClients() {
+  const filtered = state.clients.filter(c=>
+    c.nombre.toLowerCase().includes(state.searchClients.toLowerCase())||
+    (c.email||'').toLowerCase().includes(state.searchClients.toLowerCase()));
+  return `
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-search">
+          <i class="ti ti-search" style="font-size:14px;color:var(--text3)" aria-hidden="true"></i>
+          <input type="text" placeholder="Buscar cliente..." value="${state.searchClients}" oninput="state.searchClients=this.value;render()" />
+        </div>
+        <button class="btn primary" onclick="showModal('new-client')"><i class="ti ti-plus" aria-hidden="true"></i> Nuevo cliente</button>
+      </div>
+      <table>
+        <thead><tr><th>Nombre</th><th>Plan</th><th>Importe</th><th>Próximo cobro</th><th>Estado</th></tr></thead>
+        <tbody>${filtered.length?filtered.map(c=>`
+          <tr onclick="openClient(${c.id})">
+            <td><div style="font-weight:500">${c.nombre}</div><div style="font-size:12px;color:var(--text3)">${c.email||''}</div></td>
+            <td><span class="badge ${(c.plan||'').toLowerCase()}">${c.plan||'—'}</span></td>
+            <td>${c.importe?'€'+Number(c.importe).toFixed(2):'—'}</td>
+            <td>${c.cobro?fmt(c.cobro):'—'}</td>
+            <td><span class="badge ${(c.estado||'').toLowerCase()}">${c.estado||'—'}</span></td>
+          </tr>`).join(''):'<tr><td colspan="5" class="empty">No se encontraron clientes</td></tr>'}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── Detalle cliente ──
+function renderClientDetail() {
+  const c = state.clients.find(x=>x.id===state.selectedClient);
+  if(!c) return '<div class="empty">Cliente no encontrado</div>';
+  const clientePagos = state.pagos.filter(p=>p.cliente_id===c.id).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  const initials = c.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const pendiente = clientePagos.find(p=>p.estado==='Pendiente');
+  const docs = c.documentos||[];
+
+  return `
+    <div style="margin-bottom:16px">
+      <button class="btn small" onclick="navigate('clients')"><i class="ti ti-arrow-left" aria-hidden="true"></i> Volver</button>
+    </div>
+    <div class="table-card" style="padding:20px">
+      <div class="detail-header">
+        <div class="avatar">${initials}</div>
+        <div>
+          <div style="font-size:18px;font-weight:500">${c.nombre}</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:2px">${c.email||''} ${c.telefono?'· '+c.telefono:''}</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn small" onclick="showModal('edit-client',${c.id})"><i class="ti ti-edit" aria-hidden="true"></i> Editar</button>
+          ${c.estado==='Activo'
+            ?`<button class="btn small danger" onclick="toggleStatus(${c.id},'Inactivo')"><i class="ti ti-user-x" aria-hidden="true"></i> Dar de baja</button>`
+            :`<button class="btn small" onclick="toggleStatus(${c.id},'Activo')"><i class="ti ti-user-check" aria-hidden="true"></i> Reactivar</button>`}
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab ${state.clientTab==='info'?'active':''}" onclick="state.clientTab='info';render()">Información</button>
+        <button class="tab ${state.clientTab==='pagos'?'active':''}" onclick="state.clientTab='pagos';render()">Pagos</button>
+        <button class="tab ${state.clientTab==='docs'?'active':''}" onclick="state.clientTab='docs';render()">Documentos ${docs.length?`<span style="background:var(--blue-bg);color:var(--blue-text);border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px">${docs.length}</span>`:''}</button>
+        <button class="tab ${state.clientTab==='asistencia'?'active':''}" onclick="state.clientTab='asistencia';render()">Asistencia</button>
+        <button class="tab ${state.clientTab==='notas'?'active':''}" onclick="state.clientTab='notas';render()">Notas</button>
+      </div>
+
+      ${state.clientTab==='info'?`
+        <div class="detail-grid">
+          <div class="detail-field"><div class="detail-field-label">Fecha de inicio</div><div class="detail-field-value">${c.inicio?fmt(c.inicio):'—'}</div></div>
+          <div class="detail-field"><div class="detail-field-label">Próximo cobro</div><div class="detail-field-value">${c.cobro?fmt(c.cobro):'—'}</div></div>
+          <div class="detail-field"><div class="detail-field-label">Plan</div><div class="detail-field-value"><span class="badge ${(c.plan||'').toLowerCase()}">${c.plan||'—'}</span></div></div>
+          <div class="detail-field"><div class="detail-field-label">Importe a pagar</div><div class="detail-field-value">${c.importe?'€'+Number(c.importe).toFixed(2):'No especificado'}</div></div>
+          <div class="detail-field"><div class="detail-field-label">Teléfono</div><div class="detail-field-value">${c.telefono||'—'}</div></div>
+          <div class="detail-field"><div class="detail-field-label">Estado</div><div class="detail-field-value"><span class="badge ${(c.estado||'').toLowerCase()}">${c.estado||'—'}</span></div></div>
+        </div>
+        ${pendiente?`<div style="background:var(--amber-bg);border-radius:var(--r);padding:12px 14px;font-size:13px;color:var(--amber-text);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <span><i class="ti ti-alert-triangle" aria-hidden="true"></i> Pago pendiente desde ${fmt(pendiente.fecha)}: €${pendiente.monto}</span>
+          <button class="btn small" onclick="markPaid(${pendiente.id})" style="background:var(--amber);color:white;border:none">Marcar pagado</button>
+        </div>`:''}
+      `:''}
+
+      ${state.clientTab==='pagos'?`
+        <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+          <button class="btn small primary" onclick="showModal('new-payment',${c.id})"><i class="ti ti-plus" aria-hidden="true"></i> Registrar pago</button>
+        </div>
+        ${clientePagos.length?clientePagos.map(p=>{
+          const pdocs=p.documentos||[];
+          return `<div class="history-item" style="flex-direction:column;align-items:flex-start;gap:6px">
+            <div style="display:flex;align-items:center;gap:12px;width:100%">
+              <i class="ti ${p.estado==='Pagado'?'ti-circle-check':'ti-clock'}" style="font-size:18px;color:${p.estado==='Pagado'?'var(--green)':'var(--amber)'}" aria-hidden="true"></i>
+              <div style="flex:1"><div style="font-size:14px;font-weight:500">€${Number(p.monto).toFixed(2)}</div><div style="font-size:12px;color:var(--text3)">${fmt(p.fecha)}</div></div>
+              <span class="badge ${p.estado.toLowerCase()}">${p.estado}</span>
+              ${p.estado==='Pendiente'?`<button class="btn small" onclick="markPaid(${p.id})">Marcar pagado</button>`:''}
+            </div>
+            ${pdocs.length?`<div style="padding-left:30px;width:100%">${pdocs.map(d=>`
+              <div class="doc-item" style="margin-bottom:4px">
+                <i class="ti ${fileIcon(d.name)}" style="font-size:16px;color:var(--text3)" aria-hidden="true"></i>
+                <span class="doc-item-name">${d.name}</span>
+                <button class="btn small" onclick="openDoc('${d.path}')"><i class="ti ti-eye" aria-hidden="true"></i></button>
+                <button class="btn small danger" onclick="deletePagoDoc(${p.id},'${d.path}')"><i class="ti ti-trash" aria-hidden="true"></i></button>
+              </div>`).join('')}</div>`:''}
+          </div>`;
+        }).join(''):'<div class="empty">Sin historial de pagos</div>'}
+      `:''}
+
+      ${state.clientTab==='docs'?`
+        <div style="margin-bottom:16px">
+          <label class="doc-upload-area" for="doc-upload-cliente">
+            <i class="ti ti-upload" style="font-size:20px;color:var(--text3);margin-bottom:6px" aria-hidden="true"></i>
+            <div style="font-size:13px;color:var(--text2);font-weight:500">Subir documento</div>
+            <div style="font-size:12px;color:var(--text3);margin-top:2px">PDF, imagen, Word... cualquier archivo</div>
+            <input type="file" id="doc-upload-cliente" multiple onchange="handleDocUpload(event,${c.id})" />
+          </label>
+        </div>
+        ${docs.length?docs.map(d=>`
+          <div class="doc-item">
+            <i class="ti ${fileIcon(d.name)}" style="font-size:18px;color:var(--blue)" aria-hidden="true"></i>
+            <span class="doc-item-name">${d.name}</span>
+            <span class="doc-item-type">${d.name.split('.').pop().toUpperCase()}</span>
+            <button class="btn small" onclick="openDoc('${d.path}')"><i class="ti ti-eye" aria-hidden="true"></i> Ver</button>
+            <button class="btn small danger" onclick="deleteDoc(${c.id},'${d.path}')"><i class="ti ti-trash" aria-hidden="true"></i></button>
+          </div>`).join(''):'<div class="empty" style="padding:20px">Sin documentos. Sube contratos, DNI o cualquier archivo.</div>'}
+      `:''}
+
+      ${state.clientTab==='asistencia'?`
+        <div id="asist-content">${renderAsistenciaCliente(c.id)}</div>
+      `:''}
+
+      ${state.clientTab==='notas'?`
+        <textarea class="form-input" id="notas-area" style="min-height:140px;resize:vertical" placeholder="Observaciones...">${c.notas||''}</textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px">
+          <button class="btn small primary" onclick="saveNotas(${c.id})">Guardar notas</button>
+        </div>
+      `:''}
+    </div>`;
+}
+
+// ── Asistencia global ──
+function renderAsistencia() {
+  const hoy = today.toISOString().slice(0,10);
+  const asistHoy = state.asistencia.filter(a=>a.fecha===hoy);
+  const clientesActivos = state.clients.filter(c=>c.estado==='Activo');
+  const sinVenir7dias = clientesActivos.filter(c=>{
+    const asis = state.asistencia.filter(a=>a.cliente_id===c.id);
+    if(!asis.length) return true;
+    const ultima = asis[0].fecha;
+    return diffDays(new Date(ultima), today) > 7;
+  });
+
+  // Si hay un cliente seleccionado, mostrar su calendario
+  const clienteSel = state.clienteAsistencia ? state.clients.find(c=>c.id===state.clienteAsistencia) : null;
+  const filtrados = clientesActivos.filter(c=>
+    c.nombre.toLowerCase().includes((state.searchAsistencia||'').toLowerCase())
+  );
+
+  return `
+    <div class="metric-grid" style="margin-bottom:20px">
+      <div class="metric"><div class="metric-label">Asistencias hoy</div><div class="metric-value" style="color:var(--green)">${asistHoy.length}</div><div class="metric-sub">${today.toLocaleDateString('es-ES',{weekday:'long'})}</div></div>
+      <div class="metric"><div class="metric-label">Sin venir +7 días</div><div class="metric-value" style="color:var(--amber)">${sinVenir7dias.length}</div><div class="metric-sub">posible abandono</div></div>
+      <div class="metric"><div class="metric-label">Total este mes</div><div class="metric-value">${state.asistencia.filter(a=>a.fecha.startsWith(hoy.slice(0,7))).length}</div></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:${clienteSel?'1fr 1fr':'1fr'};gap:20px;align-items:start">
+      <div>
+        <div class="section-title" style="margin-bottom:10px">Pasar lista — ${today.toLocaleDateString('es-ES',{day:'numeric',month:'long'})}</div>
+        <div class="table-card">
+          <div class="table-header" style="padding:10px 12px">
+            <div class="table-search">
+              <i class="ti ti-search" style="font-size:14px;color:var(--text3)" aria-hidden="true"></i>
+              <input type="text" placeholder="Buscar cliente..." value="${state.searchAsistencia||''}"
+                oninput="state.searchAsistencia=this.value;render()" style="width:140px" />
+            </div>
+            ${clienteSel?`<button class="btn small" onclick="state.clienteAsistencia=null;state.calMes=null;render()"><i class="ti ti-x" aria-hidden="true"></i> Cerrar</button>`:''}
+          </div>
+          <table>
+            <thead><tr><th>Cliente</th><th>Última visita</th><th>Hoy</th></tr></thead>
+            <tbody>${filtrados.map(c=>{
+              const asis = state.asistencia.filter(a=>a.cliente_id===c.id).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+              const ultima = asis.length ? asis[0].fecha : null;
+              const diasSin = ultima ? diffDays(new Date(ultima), today) : null;
+              const vino = asistHoy.find(a=>a.cliente_id===c.id);
+              const color = diasSin===null?'var(--text3)':diasSin>14?'var(--red)':diasSin>7?'var(--amber)':'var(--green)';
+              const esSel = state.clienteAsistencia===c.id;
+              return `<tr style="${esSel?'background:var(--surface2)':''}">
+                <td style="cursor:pointer" onclick="selClienteAsistencia(${c.id})">
+                  <div style="font-weight:500">${c.nombre}</div>
+                  <div style="font-size:11px;color:${color}">${diasSin===null?'Sin registros':diasSin===0?'Hoy':'hace '+diasSin+'d'}</div>
+                </td>
+                <td style="color:var(--text2);font-size:12px">${ultima?fmt(ultima):'Nunca'}</td>
+                <td>${vino
+                  ?`<button class="btn small danger" onclick="quitarAsistencia(${vino.id})"><i class="ti ti-x" aria-hidden="true"></i></button>`
+                  :`<button class="btn small primary" onclick="marcarAsistencia(${c.id})"><i class="ti ti-check" aria-hidden="true"></i></button>`}
+                </td>
+              </tr>`;
+            }).join('')||'<tr><td colspan="3" class="empty">Sin resultados</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+
+        ${sinVenir7dias.length&&!state.searchAsistencia?`
+          <div style="margin-top:16px">
+            <div class="section-title" style="margin-bottom:8px">⚠️ Más de 7 días sin venir</div>
+            ${sinVenir7dias.map(c=>{
+              const asis = state.asistencia.filter(a=>a.cliente_id===c.id);
+              const ultima = asis.length ? asis[0].fecha : null;
+              const dias = ultima ? diffDays(new Date(ultima), today) : '∞';
+              return `<div class="alert-card" onclick="selClienteAsistencia(${c.id})" style="margin-bottom:6px">
+                <div class="alert-dot amber"></div>
+                <div class="alert-msg" style="font-size:13px">${c.nombre} — ${ultima?'lleva '+dias+' días sin venir':'nunca ha venido'}</div>
+                <i class="ti ti-chevron-right" style="color:var(--text3);font-size:14px" aria-hidden="true"></i>
+              </div>`;
+            }).join('')}
+          </div>`:''}
+      </div>
+
+      ${clienteSel?`
+        <div>
+          <div class="section-title" style="margin-bottom:10px">📅 ${clienteSel.nombre}</div>
+          <div class="table-card" style="padding:16px">
+            <div id="asist-content">${renderAsistenciaCliente(clienteSel.id)}</div>
+          </div>
+        </div>
+      `:''}
+    </div>
+  `;
+}
+
+function renderAsistenciaCliente(clientId) {
+  const asis = state.asistencia.filter(a=>a.cliente_id===clientId);
+  const hoy = today.toISOString().slice(0,10);
+  const totalMes = asis.filter(a=>a.fecha.startsWith(hoy.slice(0,7))).length;
+  const total = asis.length;
+  // Usar mes guardado en state o el actual
+  if(!state.calMes) state.calMes = { y: today.getFullYear(), m: today.getMonth() };
+  const { y, m } = state.calMes;
+  const mesNombre = new Date(y, m, 1).toLocaleDateString('es-ES', {month:'long', year:'numeric'});
+  const primerDia = new Date(y, m, 1).getDay(); // 0=dom
+  const offset = primerDia === 0 ? 6 : primerDia - 1; // ajustar a lunes
+  const diasMes = new Date(y, m+1, 0).getDate();
+  const asistSet = new Set(asis.map(a=>a.fecha));
+  const asistMap = {};
+  asis.forEach(a=>{ asistMap[a.fecha]=a.id; });
+  const todayStr = today.toISOString().slice(0,10);
+  const DOWS = ['L','M','X','J','V','S','D'];
+  let cells = '';
+  for(let i=0;i<offset;i++) cells+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=diasMes;d++){
+    const fechaStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const esFuturo = fechaStr > todayStr;
+    const esHoy = fechaStr === todayStr;
+    const presente = asistSet.has(fechaStr);
+    const asistId = asistMap[fechaStr];
+    let cls = 'cal-day';
+    if(esFuturo) cls+=' future';
+    if(esHoy) cls+=' today';
+    if(presente) cls+=' present';
+    const onclick = esFuturo ? '' : presente
+      ? `onclick="quitarAsistencia(${asistId})"`
+      : `onclick="marcarAsistenciaFecha(${clientId},'${fechaStr}')"`;
+    cells+=`<button class="${cls}" ${onclick} title="${fechaStr}">${d}</button>`;
+  }
+  return `
+    <div class="cal-wrap">
+      <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+        <div class="metric" style="flex:1;min-width:100px"><div class="metric-label">Este mes</div><div class="metric-value">${totalMes}</div><div class="metric-sub">visitas</div></div>
+        <div class="metric" style="flex:1;min-width:100px"><div class="metric-label">Total histórico</div><div class="metric-value">${total}</div><div class="metric-sub">visitas</div></div>
+      </div>
+      <div class="cal-header">
+        <button class="btn small" onclick="calCambiarMes(${clientId},-1)"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
+        <div class="cal-month">${mesNombre}</div>
+        <button class="btn small" onclick="calCambiarMes(${clientId},1)" ${m===today.getMonth()&&y===today.getFullYear()?'disabled':''}>
+          <i class="ti ti-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="cal-grid">
+        ${DOWS.map(d=>`<div class="cal-dow">${d}</div>`).join('')}
+        ${cells}
+      </div>
+      <div class="cal-legend">
+        <span><span class="cal-legend-dot" style="background:var(--accent)"></span>Asistió</span>
+        <span><span class="cal-legend-dot" style="outline:2px solid var(--blue);outline-offset:-1px;border-radius:50%"></span>Hoy</span>
+        <span style="color:var(--text2)">Toca un día para marcar o quitar</span>
+      </div>
+    </div>
+  `;
+}
+
+// ── Pagos globales ──
+function renderPayments() {
+  const mes = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  const pendientes = state.pagos.filter(p=>p.estado==='Pendiente');
+  const cobrado = state.pagos.filter(p=>p.estado==='Pagado'&&p.fecha.startsWith(mes)).reduce((a,p)=>a+Number(p.monto),0);
+  const enriched = state.pagos.map(p=>{
+    const c=state.clients.find(x=>x.id===p.cliente_id);
+    return {...p,clienteNombre:c?.nombre||'Desconocido'};
+  }).filter(p=>p.clienteNombre.toLowerCase().includes(state.searchPayments.toLowerCase()));
+  return `
+    <div class="metric-grid" style="margin-bottom:20px">
+      <div class="metric"><div class="metric-label">Total pendiente</div><div class="metric-value" style="color:var(--amber)">€${pendientes.reduce((a,p)=>a+Number(p.monto),0).toFixed(0)}</div></div>
+      <div class="metric"><div class="metric-label">Cobrado este mes</div><div class="metric-value" style="color:var(--green)">€${cobrado.toFixed(0)}</div></div>
+      <div class="metric"><div class="metric-label">Sin pagar</div><div class="metric-value">${pendientes.length}</div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-search">
+          <i class="ti ti-search" style="font-size:14px;color:var(--text3)" aria-hidden="true"></i>
+          <input type="text" placeholder="Buscar..." value="${state.searchPayments}" oninput="state.searchPayments=this.value;render()" />
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Cliente</th><th>Fecha</th><th>Importe</th><th>Estado</th><th>Docs</th><th></th></tr></thead>
+        <tbody>${enriched.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(p=>`
+          <tr onclick="openClient(${p.cliente_id})">
+            <td style="font-weight:500">${p.clienteNombre}</td>
+            <td style="color:var(--text2)">${fmt(p.fecha)}</td>
+            <td style="font-weight:500">€${Number(p.monto).toFixed(2)}</td>
+            <td><span class="badge ${p.estado.toLowerCase()}">${p.estado}</span></td>
+            <td style="color:var(--text3)">${(p.documentos||[]).length?`<i class="ti ti-paperclip" aria-hidden="true"></i> ${p.documentos.length}`:''}</td>
+            <td>${p.estado==='Pendiente'?`<button class="btn small" onclick="event.stopPropagation();markPaid(${p.id})">Marcar pagado</button>`:'—'}</td>
+          </tr>`).join('')||'<tr><td colspan="6" class="empty">Sin pagos registrados</td></tr>'}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── Inventario ──
+function renderInventario() {
+  const mes = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  const ventasMes = state.ventas.filter(v=>v.created_at&&v.created_at.startsWith(mes));
+  const ingresosMes = ventasMes.reduce((a,v)=>a+Number(v.total),0);
+  const gananciasMes = ventasMes.reduce((a,v)=>a+(Number(v.precio_venta)-Number(v.costo))*Number(v.cantidad),0);
+  const stockBajo = state.productos.filter(p=>p.stock<=p.stock_minimo);
+  const filtered = state.productos.filter(p=>
+    p.nombre.toLowerCase().includes((state.searchProductos||'').toLowerCase())
+  );
+
+  return `
+    <div class="metric-grid" style="margin-bottom:20px">
+      <div class="metric"><div class="metric-label">Productos</div><div class="metric-value">${state.productos.length}</div><div class="metric-sub">en catálogo</div></div>
+      <div class="metric"><div class="metric-label">Stock bajo</div><div class="metric-value" style="color:var(--red)">${stockBajo.length}</div><div class="metric-sub">por reponer</div></div>
+      <div class="metric"><div class="metric-label">Ventas este mes</div><div class="metric-value">$${ingresosMes.toFixed(0)}</div><div class="metric-sub">${ventasMes.length} transacciones</div></div>
+      <div class="metric"><div class="metric-label">Ganancia mes</div><div class="metric-value" style="color:var(--green)">$${gananciasMes.toFixed(0)}</div><div class="metric-sub">precio - costo</div></div>
+    </div>
+
+    ${stockBajo.length?`
+      <div style="margin-bottom:20px">
+        <div class="section-title" style="margin-bottom:8px">⚠️ Stock bajo — reponer pronto</div>
+        ${stockBajo.map(p=>`
+          <div class="alert-card" style="margin-bottom:6px">
+            <div class="alert-dot red"></div>
+            <div class="alert-msg" style="font-size:13px">${p.nombre} — quedan <strong>${p.stock}</strong> unidades (mínimo: ${p.stock_minimo})</div>
+            <button class="btn small" onclick="showModal('reponer',${p.id})"><i class="ti ti-plus" aria-hidden="true"></i> Reponer</button>
+          </div>`).join('')}
+      </div>`:''}
+
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-search">
+          <i class="ti ti-search" style="font-size:14px;color:var(--text3)" aria-hidden="true"></i>
+          <input type="text" placeholder="Buscar producto..." value="${state.searchProductos||''}"
+            oninput="state.searchProductos=this.value;render()" />
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn small" onclick="showModal('nueva-venta')"><i class="ti ti-shopping-cart" aria-hidden="true"></i> Registrar venta</button>
+          <button class="btn primary" onclick="showModal('nuevo-producto')"><i class="ti ti-plus" aria-hidden="true"></i> Nuevo producto</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Producto</th><th>Stock</th><th>Costo</th><th>Precio venta</th><th>Margen</th><th></th></tr></thead>
+        <tbody>${filtered.length?filtered.map(p=>{
+          const margen = p.precio_venta&&p.costo ? (((p.precio_venta-p.costo)/p.precio_venta)*100).toFixed(0)+'%' : '—';
+          const stockColor = p.stock<=p.stock_minimo?'var(--red)':p.stock<=p.stock_minimo*2?'var(--amber)':'var(--green)';
+          return `<tr>
+            <td><div style="font-weight:700">${p.nombre}</div><div style="font-size:11px;color:var(--text3)">${p.categoria||''}</div></td>
+            <td style="font-weight:700;color:${stockColor}">${p.stock} <span style="font-size:11px;color:var(--text3)">/ mín ${p.stock_minimo}</span></td>
+            <td style="color:var(--text2)">$${Number(p.costo).toFixed(2)}</td>
+            <td style="font-weight:700">$${Number(p.precio_venta).toFixed(2)}</td>
+            <td style="color:var(--green)">${margen}</td>
+            <td style="display:flex;gap:6px">
+              <button class="btn small primary" onclick="showModal('venta-rapida',${p.id})"><i class="ti ti-shopping-cart" aria-hidden="true"></i></button>
+              <button class="btn small" onclick="showModal('editar-producto',${p.id})"><i class="ti ti-edit" aria-hidden="true"></i></button>
+            </td>
+          </tr>`;
+        }).join(''):'<tr><td colspan="6" class="empty">Sin productos. Añade tu primer producto.</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+
+    ${state.ventas.length?`
+      <div style="margin-top:20px">
+        <div class="section-title" style="margin-bottom:10px">Últimas ventas</div>
+        <div class="table-card"><table>
+          <thead><tr><th>Producto</th><th>Cantidad</th><th>Total</th><th>Fecha</th></tr></thead>
+          <tbody>${state.ventas.slice(0,10).map(v=>{
+            const p=state.productos.find(x=>x.id===v.producto_id);
+            return `<tr>
+              <td style="font-weight:600">${p?.nombre||'—'}</td>
+              <td>${v.cantidad}</td>
+              <td style="font-weight:700;color:var(--green)">$${Number(v.total).toFixed(2)}</td>
+              <td style="color:var(--text2);font-size:12px">${v.created_at?fmt(v.created_at.slice(0,10)):'—'}</td>
+            </tr>`;
+          }).join('')}
+          </tbody>
+        </table></div>
+      </div>`:''}
+  `;
+}
+
+// ── Alertas ──
+function renderAlerts() {
+  const alerts = getAlerts();
+  return `
+    <div style="margin-bottom:12px;font-size:13px;color:var(--text2)">${alerts.length} recordatorio${alerts.length!==1?'s':''} activo${alerts.length!==1?'s':''}</div>
+    ${alerts.length?alerts.map(a=>`
+      <div class="alert-card" onclick="openClient(${a.id})" style="margin-bottom:10px">
+        <div class="alert-dot ${a.type}"></div>
+        <div style="flex:1"><div class="alert-msg" style="font-size:15px">${a.msg}</div><div style="font-size:12px;color:var(--text3);margin-top:3px">Toca para ver el cliente</div></div>
+        <i class="ti ti-chevron-right" style="color:var(--text3);font-size:14px" aria-hidden="true"></i>
+      </div>`).join(''):'<div class="empty" style="padding:48px">Sin recordatorios pendientes ✅</div>'}
+    <div style="margin-top:24px;padding:16px;background:var(--blue-bg);border-radius:var(--rl);font-size:13px;color:var(--blue-text)">
+      <div style="font-weight:500;margin-bottom:4px"><i class="ti ti-info-circle" aria-hidden="true"></i> Cómo funcionan</div>
+      Se generan automáticamente. Alertas cuando un cliente venza, no haya pagado, o cumpla 3, 6 o 12 meses.
+    </div>`;
+}
+
+// ── Modal ──
+function showModal(type, clientId) { state.showModal={type,clientId}; renderModal(); }
+function closeModal() { state.showModal=null; renderModal(); }
+
+function renderModal() {
+  const root = document.getElementById('modal-root');
+  if(!state.showModal){root.innerHTML='';return;}
+  const {type,clientId}=state.showModal;
+  const c=clientId?state.clients.find(x=>x.id===clientId):null;
+  const PLANES=['Mensual','Trimestral','Anual'];
+  let inner='';
+
+  if(type==='new-client') {
+    const hoy=today.toISOString().slice(0,10);
+    const mes=addDays(today,30).toISOString().slice(0,10);
+    inner=`
+      <div class="modal-title">Nuevo cliente <button class="btn small" onclick="closeModal()"><i class="ti ti-x" aria-hidden="true"></i></button></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="f-nombre" placeholder="Nombre completo" /></div>
+        <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="f-tel" placeholder="600 000 000" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="f-email" type="email" /></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Fecha de inicio</label><input class="form-input" id="f-inicio" type="date" value="${hoy}" /></div>
+        <div class="form-group"><label class="form-label">Próximo cobro</label><input class="form-input" id="f-cobro" type="date" value="${mes}" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Plan</label><select class="form-input" id="f-plan">${PLANES.map(p=>`<option>${p}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">Importe a pagar (€)</label><input class="form-input" id="f-importe" type="number" step="0.01" placeholder="35.00" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Documentos (opcional)</label>
+        <label class="doc-upload-area" for="f-docs-new" style="padding:12px">
+          <i class="ti ti-upload" style="font-size:16px;color:var(--text3)" aria-hidden="true"></i>
+          <span style="font-size:13px;color:var(--text2);margin-left:8px">Seleccionar archivos</span>
+          <input type="file" id="f-docs-new" multiple style="display:none" />
+        </label>
+        <div id="f-docs-preview" style="margin-top:6px"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="f-notas" style="min-height:70px;resize:vertical"></textarea></div>
+      <div class="form-actions">
+        <button class="btn" onclick="closeModal()">Cancelar</button>
+        <button class="btn primary" id="save-btn" onclick="saveNewClient()">Guardar cliente</button>
+      </div>`;
+  }
+
+  if(type==='edit-client'&&c) {
+    inner=`
+      <div class="modal-title">Editar — ${c.nombre} <button class="btn small" onclick="closeModal()"><i class="ti ti-x" aria-hidden="true"></i></button></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="f-nombre" value="${c.nombre}" /></div>
+        <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="f-tel" value="${c.telefono||''}" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="f-email" value="${c.email||''}" /></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Fecha de inicio</label><input class="form-input" id="f-inicio" type="date" value="${c.inicio||''}" /></div>
+        <div class="form-group"><label class="form-label">Próximo cobro</label><input class="form-input" id="f-cobro" type="date" value="${c.cobro||''}" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Plan</label><select class="form-input" id="f-plan">${PLANES.map(p=>`<option ${p===c.plan?'selected':''}>${p}</option>`).join('')}</select></div>
+        <div class="form-group"><label class="form-label">Importe a pagar (€)</label><input class="form-input" id="f-importe" type="number" step="0.01" value="${c.importe||''}" /></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" onclick="closeModal()">Cancelar</button>
+        <button class="btn primary" id="save-btn" onclick="saveEditClient(${c.id})">Guardar cambios</button>
+      </div>`;
+  }
+
+  if(type==='new-payment'&&c) {
+    const defaultMonto=c.importe||(c.plan==='Mensual'?35:c.plan==='Trimestral'?90:350);
+    inner=`
+      <div class="modal-title">Registrar pago — ${c.nombre} <button class="btn small" onclick="closeModal()"><i class="ti ti-x" aria-hidden="true"></i></button></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Fecha</label><input class="form-input" id="f-fecha" type="date" value="${today.toISOString().slice(0,10)}" /></div>
+        <div class="form-group"><label class="form-label">Importe (€)</label><input class="form-input" id="f-monto" type="number" step="0.01" value="${defaultMonto}" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Estado</label><select class="form-input" id="f-estado"><option>Pagado</option><option>Pendiente</option></select></div>
+      <div class="form-group"><label class="form-label">Documento adjunto (factura, justificante...)</label>
+        <label class="doc-upload-area" for="f-docs-pago" style="padding:12px">
+          <i class="ti ti-upload" style="font-size:16px;color:var(--text3)" aria-hidden="true"></i>
+          <span style="font-size:13px;color:var(--text2);margin-left:8px">Seleccionar archivo</span>
+          <input type="file" id="f-docs-pago" multiple style="display:none" onchange="previewDocs('f-docs-pago','f-pago-preview')" />
+        </label>
+        <div id="f-pago-preview" style="margin-top:6px"></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" onclick="closeModal()">Cancelar</button>
+        <button class="btn primary" id="save-btn" onclick="saveNewPayment(${c.id})">Registrar</button>
+      </div>`;
+  }
+
+  const CATEGORIAS = ['Suplementos','Bebidas','Snacks','Ropa','Accesorios','Otro'];
+
+  if(type==='nuevo-producto') {
+    inner=`
+      <div class="modal-title">Nuevo producto <button class="btn small" onclick="closeModal()"><i class="ti ti-x" aria-hidden="true"></i></button></div>
+      <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="f-pnombre" placeholder="Proteína Whey 1kg" /></div>
+      <div class="form-group"><label class="form-label">Categoría</label>
+        <select class="form-input" id="f-pcat">${CATEGORIAS.map(c=>`<option>${c}</option>`).join('')}</select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Costo ($)</label><input class="form-input" id="f-pcosto" type="number" step="0.01" placeholder="0.00" /></div>
+        <div class="form-group"><label class="form-label">Precio de venta ($)</label><input class="form-input" id="f-pprecio" type="number" step="0.01" placeholder="0.00" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Stock inicial</label><input class="form-input" id="f-pstock" type="number" value="0" /></div>
+        <div class="form-group"><label class="form-label">Stock mínimo</label><input class="form-input" id="f-pmin" type="number" value="5" /></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn" onclick="closeModal()">Cancelar</button>
+        <button class="btn primary" id="save-btn" onclick="saveNuevoProducto()">Guardar producto</button>
+      </div>`;
+  }
+
+  if(type==='editar-producto'&&clientId) {
+    const p=state.productos.find(x=>x.id===clientId);
+    inner=`
+      <div class="modal-title">Editar — ${p?.nombre} <button class="btn small" onclick="closeModal()"><i class="ti ti-x" aria-hidden="true"></i></button></div>
+      <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="f-pnombre" value="${p?.nombre||''}" /></div>
+      <div class="form-group"><label class="form-label">Categoría</label>
+        <select class="form-input" id="f-pcat">${CATEGORIAS.map(cat=>`<option ${cat===p?.categoria?'selected':''}>${cat}</option>`).join('')}</select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Costo ($)</label><input class="form-input" id="f-pcosto" type="number" step="0.01" value="${p?.costo||0}" /></div>
+        <div class="form-group"><label class="form-label">Precio de venta ($)</label><input class="form-input" id="f-pprecio" type="number" step="0.01" value="${p?.precio_venta||0}" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Stock actual</label><input class="form-input" id="f-pstock" type="number" value="${p?.stock||0}" /></div>
+        <div class="form-group"><label class="form-label">Stock mínimo</label><input class="form-input" id="f-pmin" type="number" value="${p?.stock_minimo||5}" /></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn danger" onclick="eliminarProducto(${p?.id})">Eliminar</button>
+        <button class="btn" onclick="closeModal()">Cancelar</button>
+        <button class="btn primary" id="save-btn" onclick="saveEditarProducto(${p?.id})">Guardar</button>
+      </div>`;
+  }
+
+  if(type==='reponer'&&clientId) {
+    const p=state.productos.find(x=>x.id===clientId);
+    inner=`
+      <div class="modal-title">Reponer stock — ${p?.nombre} <button class="btn small" onclick="closeModal()"><i class="ti ti-x" aria-hidden="true"></i></button></div>
+      <div class="form-group"><label class="form-label">Stock actual</label><input class="form-input" disabled value="${p?.stock}" /></div>
+      <div class="form-group"><label class="form-label">Unidades a añadir</label><input class="form-input" id="f-reponer" type="number" value="10" min="1" /></div>
+      <div class="form-actions">
+        <button class="btn" onclick="closeModal()">Cancelar</button>
+        <button class="btn primary" id="save-btn" onclick="reponerStock(${p?.id},${p?.stock})">Reponer</button>
+      </div>`;
+  }
+
+  if(type==='venta-rapida'&&clientId) {
+    const p=state.productos.find(x=>x.id===clientId);
+    inner=`
+      <div class="modal-title">Vender — ${p?.nombre} <button class="btn small" onclick="closeModal()"><i class="ti ti-x" aria-hidden="true"></i></button></div>
+      <div class="form-group"><label class="form-label">Stock disponible</label><input class="form-input" disabled value="${p?.stock} unidades" /></div>
+      <div class="form-group"><label class="form-label">Precio de venta</label><input class="form-input" disabled value="$${p?.precio_venta}" /></div>
+      <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" id="f-vcantidad" type="number" value="1" min="1" max="${p?.stock}" /></div>
+      <div class="form-actions">
+        <button class="btn" onclick="closeModal()">Cancelar</button>
+        <button class="btn primary" id="save-btn" onclick="registrarVentaRapida(${p?.id})">Registrar venta</button>
+      </div>`;
+  }
+
+  if(type==='nueva-venta') {
+    inner=`
+      <div class="modal-title">Registrar venta <button class="btn small" onclick="closeModal()"><i class="ti ti-x" aria-hidden="true"></i></button></div>
+      <div class="form-group"><label class="form-label">Producto *</label>
+        <select class="form-input" id="f-vprod" onchange="actualizarPrecioVenta()">
+          <option value="">— Seleccionar —</option>
+          ${state.productos.map(p=>`<option value="${p.id}" data-precio="${p.precio_venta}" data-stock="${p.stock}">${p.nombre} (stock: ${p.stock})</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" id="f-vcantidad" type="number" value="1" min="1" oninput="actualizarPrecioVenta()" /></div>
+        <div class="form-group"><label class="form-label">Precio unitario ($)</label><input class="form-input" id="f-vprecio" type="number" step="0.01" /></div>
+      </div>
+      <div id="venta-total" style="background:var(--surface2);border-radius:var(--r);padding:12px;font-size:14px;color:var(--text2);margin-bottom:4px"></div>
+      <div class="form-actions">
+        <button class="btn" onclick="closeModal()">Cancelar</button>
+        <button class="btn primary" id="save-btn" onclick="registrarVenta()">Registrar venta</button>
+      </div>`;
+  }
+
+  root.innerHTML=`<div class="modal-overlay" onclick="event.target===this&&closeModal()"><div class="modal">${inner}</div></div>`;
+  if(type==='nueva-venta') actualizarPrecioVenta();
+
+  // Preview de archivos seleccionados
+  const newInput=document.getElementById('f-docs-new');
+  if(newInput) newInput.addEventListener('change',()=>previewDocs('f-docs-new','f-docs-preview'));
+}
+
+function previewDocs(inputId, previewId) {
+  const files=[...document.getElementById(inputId).files];
+  const preview=document.getElementById(previewId);
+  if(!preview) return;
+  preview.innerHTML=files.map(f=>`
+    <div class="doc-item" style="margin-bottom:4px">
+      <i class="ti ${fileIcon(f.name)}" style="font-size:16px;color:var(--blue)" aria-hidden="true"></i>
+      <span class="doc-item-name">${f.name}</span>
+      <span class="doc-item-type">${(f.size/1024).toFixed(0)} KB</span>
+    </div>`).join('');
+}
+
+// ── Acciones ──
+async function openClient(id) {
+  state.selectedClient=id; state.view='client-detail'; state.clientTab='info';
+  state.calMes = { y: today.getFullYear(), m: today.getMonth() };
+  const c=state.clients.find(x=>x.id===id);
+  document.getElementById('page-title').textContent=c?.nombre||'Cliente';
+  await loadAll();
+}
+
+async function toggleStatus(id, nuevoEstado) {
+  const {error}=await db.from('clientes').update({estado:nuevoEstado}).eq('id',id);
+  if(error){toast('Error al actualizar estado','error');return;}
+  toast(nuevoEstado==='Activo'?'Cliente reactivado':'Cliente dado de baja');
+  await loadAll();
+}
+
+async function markPaid(pagoId) {
+  const {error}=await db.from('pagos').update({estado:'Pagado'}).eq('id',pagoId);
+  if(error){toast('Error al actualizar pago','error');return;}
+  toast('Pago marcado como pagado ✓');
+  await loadAll();
+}
+
+async function saveNotas(clientId) {
+  const notas=document.getElementById('notas-area').value;
+  const {error}=await db.from('clientes').update({notas}).eq('id',clientId);
+  if(error){toast('Error al guardar notas','error');return;}
+  toast('Notas guardadas ✓');
+  state.clients=state.clients.map(c=>c.id===clientId?{...c,notas}:c);
+}
+
+async function handleDocUpload(event, clientId) {
+  const files=[...event.target.files];
+  if(!files.length) return;
+  const btn=document.querySelector('.btn.primary');
+  try {
+    const c=state.clients.find(x=>x.id===clientId);
+    const docsActuales=c.documentos||[];
+    toast('Subiendo documentos...');
+    const nuevos=await Promise.all(files.map(f=>uploadDoc(f,`clientes/${clientId}`)));
+    await db.from('clientes').update({documentos:[...docsActuales,...nuevos]}).eq('id',clientId);
+    toast(`${nuevos.length} documento${nuevos.length!==1?'s':''} subido${nuevos.length!==1?'s':''} ✓`);
+    await loadAll();
+  } catch(e) {
+    toast('Error al subir documento','error');
+  }
+}
+
+async function saveNewClient() {
+  const nombre=document.getElementById('f-nombre').value.trim();
+  if(!nombre){toast('El nombre es obligatorio','error');return;}
+  setBtnLoading('save-btn',true);
+  const {data,error}=await db.from('clientes').insert({
+    nombre,
+    telefono:document.getElementById('f-tel').value,
+    email:document.getElementById('f-email').value,
+    inicio:document.getElementById('f-inicio').value||null,
+    cobro:document.getElementById('f-cobro').value||null,
+    plan:document.getElementById('f-plan').value,
+    importe:parseFloat(document.getElementById('f-importe').value)||null,
+    notas:document.getElementById('f-notas').value,
+    estado:'Activo', documentos:[],
+  }).select().single();
+  if(error){toast('Error al crear cliente','error');setBtnLoading('save-btn',false);return;}
+  const fileInput=document.getElementById('f-docs-new');
+  if(fileInput&&fileInput.files.length) {
+    try {
+      const files=[...fileInput.files];
+      const nuevos=await Promise.all(files.map(f=>uploadDoc(f,`clientes/${data.id}`)));
+      await db.from('clientes').update({documentos:nuevos}).eq('id',data.id);
+    } catch(e){toast('Cliente creado pero hubo un error con los documentos','error');}
+  }
+  toast('Cliente creado ✓');
+  closeModal();
+  await navigate('clients');
+}
+
+async function saveEditClient(id) {
+  setBtnLoading('save-btn',true);
+  const {error}=await db.from('clientes').update({
+    nombre:document.getElementById('f-nombre').value,
+    telefono:document.getElementById('f-tel').value,
+    email:document.getElementById('f-email').value,
+    inicio:document.getElementById('f-inicio').value||null,
+    cobro:document.getElementById('f-cobro').value||null,
+    plan:document.getElementById('f-plan').value,
+    importe:parseFloat(document.getElementById('f-importe').value)||null,
+  }).eq('id',id);
+  if(error){toast('Error al guardar cambios','error');setBtnLoading('save-btn',false);return;}
+  toast('Cambios guardados ✓');
+  closeModal();
+  await loadAll();
+}
+
+async function saveNewPayment(clientId) {
+  setBtnLoading('save-btn',true);
+  const {data,error}=await db.from('pagos').insert({
+    cliente_id:clientId,
+    fecha:document.getElementById('f-fecha').value,
+    monto:parseFloat(document.getElementById('f-monto').value),
+    estado:document.getElementById('f-estado').value,
+    documentos:[],
+  }).select().single();
+  if(error){toast('Error al registrar pago','error');setBtnLoading('save-btn',false);return;}
+  const fileInput=document.getElementById('f-docs-pago');
+  if(fileInput&&fileInput.files.length) {
+    try {
+      const files=[...fileInput.files];
+      const docs=await Promise.all(files.map(f=>uploadDoc(f,`pagos/${data.id}`)));
+      await db.from('pagos').update({documentos:docs}).eq('id',data.id);
+    } catch(e){}
+  }
+  toast('Pago registrado ✓');
+  closeModal();
+  await loadAll();
+}
+
+async function marcarAsistencia(clientId) {
+  const hoy = today.toISOString().slice(0,10);
+  const yaExiste = state.asistencia.find(a=>a.cliente_id===clientId&&a.fecha===hoy);
+  if(yaExiste){toast('Ya está marcado hoy');return;}
+  const {error} = await db.from('asistencia').insert({cliente_id:clientId, fecha:hoy});
+  if(error){toast('Error al marcar asistencia','error');return;}
+  toast('Asistencia marcada ✓');
+  await loadAll();
+}
+
+function selClienteAsistencia(clientId) {
+  state.clienteAsistencia = state.clienteAsistencia===clientId ? null : clientId;
+  state.calMes = { y: today.getFullYear(), m: today.getMonth() };
+  render();
+}
+
+async function marcarAsistenciaFecha(clientId, fecha) {
+  const yaExiste = state.asistencia.find(a=>a.cliente_id===clientId&&a.fecha===fecha);
+  if(yaExiste){toast('Ya hay asistencia ese día');return;}
+  const {error} = await db.from('asistencia').insert({cliente_id:clientId, fecha});
+  if(error){toast('Error al guardar','error');return;}
+  await loadAll();
+}
+
+function calCambiarMes(clientId, dir) {
+  if(!state.calMes) state.calMes = { y: today.getFullYear(), m: today.getMonth() };
+  let { y, m } = state.calMes;
+  m += dir;
+  if(m > 11){ m=0; y++; }
+  if(m < 0){ m=11; y--; }
+  if(y > today.getFullYear() || (y===today.getFullYear() && m>today.getMonth())) return;
+  state.calMes = { y, m };
+  const el = document.getElementById('asist-content');
+  if(el) el.innerHTML = renderAsistenciaCliente(clientId);
+}
+
+async function quitarAsistencia(asistId) {
+  const {error} = await db.from('asistencia').delete().eq('id',asistId);
+  if(error){toast('Error al quitar asistencia','error');return;}
+  toast('Asistencia eliminada');
+  await loadAll();
+}
+
+function actualizarPrecioVenta() {
+  const sel=document.getElementById('f-vprod');
+  const cant=parseInt(document.getElementById('f-vcantidad')?.value)||1;
+  const precioInput=document.getElementById('f-vprecio');
+  const totalEl=document.getElementById('venta-total');
+  if(!sel||!sel.value){if(totalEl)totalEl.innerHTML='';return;}
+  const opt=sel.options[sel.selectedIndex];
+  const precio=parseFloat(opt.dataset.precio)||0;
+  if(precioInput&&!precioInput._edited) precioInput.value=precio.toFixed(2);
+  const total=(parseFloat(precioInput?.value)||precio)*cant;
+  if(totalEl) totalEl.innerHTML=`Total: <strong style="color:var(--text);font-size:16px">$${total.toFixed(2)}</strong>`;
+}
+
+async function saveNuevoProducto() {
+  const nombre=document.getElementById('f-pnombre').value.trim();
+  if(!nombre){toast('El nombre es obligatorio','error');return;}
+  setBtnLoading('save-btn',true);
+  const {error}=await db.from('productos').insert({
+    nombre,
+    categoria:document.getElementById('f-pcat').value,
+    costo:parseFloat(document.getElementById('f-pcosto').value)||0,
+    precio_venta:parseFloat(document.getElementById('f-pprecio').value)||0,
+    stock:parseInt(document.getElementById('f-pstock').value)||0,
+    stock_minimo:parseInt(document.getElementById('f-pmin').value)||5,
+  });
+  if(error){toast('Error al guardar','error');setBtnLoading('save-btn',false);return;}
+  toast('Producto creado ✓');
+  closeModal();
+  await loadAll();
+}
+
+async function saveEditarProducto(id) {
+  setBtnLoading('save-btn',true);
+  const {error}=await db.from('productos').update({
+    nombre:document.getElementById('f-pnombre').value,
+    categoria:document.getElementById('f-pcat').value,
+    costo:parseFloat(document.getElementById('f-pcosto').value)||0,
+    precio_venta:parseFloat(document.getElementById('f-pprecio').value)||0,
+    stock:parseInt(document.getElementById('f-pstock').value)||0,
+    stock_minimo:parseInt(document.getElementById('f-pmin').value)||5,
+  }).eq('id',id);
+  if(error){toast('Error al guardar','error');setBtnLoading('save-btn',false);return;}
+  toast('Producto actualizado ✓');
+  closeModal();
+  await loadAll();
+}
+
+async function eliminarProducto(id) {
+  if(!confirm('¿Eliminar este producto?')) return;
+  await db.from('productos').delete().eq('id',id);
+  toast('Producto eliminado');
+  closeModal();
+  await loadAll();
+}
+
+async function reponerStock(id, stockActual) {
+  const cantidad=parseInt(document.getElementById('f-reponer').value)||0;
+  if(cantidad<=0){toast('Ingresa una cantidad válida','error');return;}
+  setBtnLoading('save-btn',true);
+  const {error}=await db.from('productos').update({stock:stockActual+cantidad}).eq('id',id);
+  if(error){toast('Error al reponer','error');setBtnLoading('save-btn',false);return;}
+  toast(`Stock actualizado: +${cantidad} unidades ✓`);
+  closeModal();
+  await loadAll();
+}
+
+async function registrarVentaRapida(productoId) {
+  const p=state.productos.find(x=>x.id===productoId);
+  const cantidad=parseInt(document.getElementById('f-vcantidad').value)||1;
+  if(cantidad>p.stock){toast('No hay suficiente stock','error');return;}
+  setBtnLoading('save-btn',true);
+  const total=cantidad*p.precio_venta;
+  const {error:e1}=await db.from('ventas').insert({producto_id:productoId,cantidad,precio_venta:p.precio_venta,costo:p.costo,total});
+  const {error:e2}=await db.from('productos').update({stock:p.stock-cantidad}).eq('id',productoId);
+  if(e1||e2){toast('Error al registrar venta','error');setBtnLoading('save-btn',false);return;}
+  toast(`Venta registrada — $${total.toFixed(2)} ✓`);
+  closeModal();
+  await loadAll();
+}
+
+async function registrarVenta() {
+  const prodId=parseInt(document.getElementById('f-vprod').value);
+  if(!prodId){toast('Selecciona un producto','error');return;}
+  const p=state.productos.find(x=>x.id===prodId);
+  const cantidad=parseInt(document.getElementById('f-vcantidad').value)||1;
+  const precio=parseFloat(document.getElementById('f-vprecio').value)||p.precio_venta;
+  if(cantidad>p.stock){toast('No hay suficiente stock','error');return;}
+  setBtnLoading('save-btn',true);
+  const total=cantidad*precio;
+  const {error:e1}=await db.from('ventas').insert({producto_id:prodId,cantidad,precio_venta:precio,costo:p.costo,total});
+  const {error:e2}=await db.from('productos').update({stock:p.stock-cantidad}).eq('id',prodId);
+  if(e1||e2){toast('Error al registrar','error');setBtnLoading('save-btn',false);return;}
+  toast(`Venta registrada — $${total.toFixed(2)} ✓`);
+  closeModal();
+  await loadAll();
+}
+
+function setBtnLoading(id,loading) {
+  const btn=document.getElementById(id);
+  if(btn){btn.disabled=loading;btn.textContent=loading?'Guardando...':'Guardar';}
+}
+
+// ── Arranque ──
+(async()=>{
+  document.querySelector('.app').style.display='none';
+  const {data:{session}}=await db.auth.getSession();
+  if(session){showApp();}
+  else{document.getElementById('login-screen').style.display='flex';}
+})();
+
+const toggleSidebar = document.getElementById('toggleSidebar');
+const showSidebar = document.getElementById('showSidebar');
+const sidebar = document.getElementById('sidebar');
+const main = document.querySelector('.main');
+
+toggleSidebar.addEventListener('click', () => {
+    sidebar.classList.add('ocultar');
+    main.classList.add('expandido');
+    showSidebar.classList.add('visible');
+});
+
+showSidebar.addEventListener('click', () => {
+    sidebar.classList.remove('ocultar');
+    main.classList.remove('expandido');
+    showSidebar.classList.remove('visible');
+});
+</script>
+</body>
+</html>
