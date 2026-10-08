@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio 8:7 — GYM TRAINING</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0a; --surface: #111111; --surface2: #1a1a1a;
+  --text: #f0f0f0; --text2: #a0a0a0; --text3: #606060;
+  --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.04);
+  --accent: #E8001C;
+  --green: #4ade80; --green-bg: #052e16; --green-text: #86efac;
+  --amber: #fbbf24; --amber-bg: #1c1000; --amber-text: #fde68a;
+  --red: #E8001C; --red-bg: #1a0005; --red-text: #fca5a5;
+  --blue: #60a5fa; --blue-bg: #0c1a2e; --blue-text: #93c5fd;
+  --purple: #a78bfa; --purple-bg: #1a0e2e; --purple-text: #c4b5fd;
+  --r: 6px; --rl: 10px;
+}
+body { font-family: 'Arial Black', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.app { display: flex; min-height: 100vh; }
+.sidebar { width: 220px; background: var(--surface); border-right: 0.5px solid rgba(232,0,28,0.15); display: flex; flex-direction: column; flex-shrink: 0; position: fixed; top: 0; bottom: 0; left: 0; z-index: 20; transition: width 0.3s ease; overflow: hidden; }
+.sidebar.ocultar { width: 0; }
+.show-btn { position: fixed; top: 15px; left: 15px; z-index: 30; display: none; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 16px; }
+.show-btn.visible { display: block; }
+.main { flex: 1; margin-left: 220px; min-width: 0; transition: margin-left 0.3s ease; }
+.main.expandido { margin-left: 0; }
+.logo { padding: 20px 20px 16px; border-bottom: 0.5px solid var(--border2); white-space: nowrap; }
+.logo-mark { font-size: 20px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; color: var(--text); }
+.logo-sub { font-size: 10px; color: var(--text3); margin-top: 2px; letter-spacing: 2px; }
+.nav { padding: 12px 8px; flex: 1; overflow-y: auto; }
+.nav-section { font-size: 9px; color: var(--text3); letter-spacing: 2px; padding: 8px 12px 4px; text-transform: uppercase; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--r); cursor: pointer; font-size: 11px; color: var(--text2); transition: all 0.15s; margin-bottom: 2px; border: none; background: none; width: 100%; text-align: left; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; white-space: nowrap; }
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: #E8001C; color: #fff; }
+.nav-item .ti { font-size: 16px; flex-shrink: 0; }
+.alerts-badge { margin-left: auto; background: #E8001C; color: #fff; font-size: 10px; font-weight: 600; border-radius: 10px; padding: 1px 6px; }
+.topbar { padding: 16px 24px; border-bottom: 1px solid rgba(232,0,28,0.15); display: flex; align-items: center; justify-content: space-between; background: var(--surface); position: sticky; top: 0; z-index: 10; }
+.topbar-title { font-size: 16px; font-weight: 500; }
+.topbar-role { font-size: 11px; color: var(--text3); background: var(--surface2); padding: 3px 10px; border-radius: 20px; letter-spacing: 1px; text-transform: uppercase; }
+.content { padding: 24px; }
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.metric { background: var(--surface2); border-radius: var(--r); padding: 16px; border: 0.5px solid rgba(255,255,255,0.06); }
+.metric-label { font-size: 12px; color: var(--text3); margin-bottom: 6px; }
+.metric-value { font-size: 24px; font-weight: 900; color: var(--text); }
+.metric-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+.section-title { font-size: 13px; font-weight: 500; color: #E8001C; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
+.alert-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--rl); padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; cursor: pointer; }
+.alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.alert-dot.red { background: #E8001C; }
+.alert-dot.amber { background: #fbbf24; }
+.alert-dot.blue { background: #60a5fa; }
+.table-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--rl); overflow: hidden; }
+.table-header { padding: 14px 16px; border-bottom: 0.5px solid var(--border2); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.table-search { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 0.5px solid var(--border); border-radius: var(--r); padding: 6px 10px; }
+.table-search input { border: none; background: none; outline: none; font-size: 13px; color: var(--text); width: 160px; font-family: inherit; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 500; color: #E8001C; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(232,0,28,0.2); }
+td { padding: 12px 16px; border-bottom: 0.5px solid var(--border2); color: var(--text); }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--surface2); cursor: pointer; }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+.badge.activo { background: #052e16; color: #4ade80; }
+.badge.inactivo { background: var(--surface2); color: var(--text3); }
+.badge.pendiente { background: #1c1000; color: #fde68a; }
+.badge.pagado { background: #052e16; color: #4ade80; }
+.badge.reservada { background: #0c1a2e; color: #93c5fd; }
+.badge.cancelada { background: var(--surface2); color: var(--text3); }
+.badge.asistio { background: #052e16; color: #4ade80; }
+.badge.no_asistio { background: #1a0005; color: #fca5a5; }
+.badge.lista_espera { background: #1c1000; color: #fde68a; }
+.badge.mensual { background: #0c1a2e; color: #60a5fa; }
+.badge.trimestral { background: #1a0e2e; color: #a78bfa; }
+.badge.anual { background: #1a0a00; color: #fb923c; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--r); font-size: 13px; cursor: pointer; border: 0.5px solid var(--border); background: var(--surface2); color: var(--text); transition: all 0.15s; font-family: inherit; }
+.btn:hover { background: var(--surface); }
+.btn.primary { background: #E8001C; color: #fff; border-color: #E8001C; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.btn.primary:hover { background: #c0001a; }
+.btn.small { padding: 4px 10px; font-size: 12px; }
+.btn.danger { background: var(--red-bg); color: var(--red-text); border-color: transparent; }
+.btn.success { background: var(--green-bg); color: var(--green-text); border-color: transparent; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal { background: var(--surface); border-radius: var(--rl); padding: 24px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; border: 0.5px solid var(--border); }
+.modal-title { font-size: 16px; font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; color: var(--text2); margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-input { width: 100%; padding: 8px 10px; border: 0.5px solid var(--border); border-radius: var(--r); background: var(--surface2); color: var(--text); font-size: 13px; outline: none; font-family: inherit; }
+.form-input:focus { border-color: var(--blue); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+.detail-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 16px; background: var(--blue-bg); color: var(--blue-text); flex-shrink: 0; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.detail-field { background: var(--surface2); border-radius: var(--r); padding: 12px; }
+.detail-field-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.detail-field-value { font-size: 14px; color: var(--text); font-weight: 500; }
+.history-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 0.5px solid var(--border2); }
+.history-item:last-child { border-bottom: none; }
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 0.5px solid var(--border2); overflow-x: auto; }
+.tab { padding: 8px 16px; font-size: 13px; cursor: pointer; color: var(--text2); border-bottom: 2px solid transparent; margin-bottom: -0.5px; transition: all 0.15s; background: none; border-top: none; border-left: none; border-right: none; white-space: nowrap; font-family: inherit; }
+.tab.active { color: var(--text); border-bottom-color: #E8001C; font-weight: 500; }
+.empty { padding: 32px; text-align: center; color: var(--text3); font-size: 14px; }
+.loading { padding: 48px; text-align: center; color: var(--text3); font-size: 14px; }
+.toast { position: fixed; bottom: 24px; right: 24px; background: #E8001C; color: #fff; padding: 12px 18px; border-radius: var(--r); font-size: 13px; z-index: 200; animation: fadeIn 0.2s ease; }
+.toast.error { background: #7f1d1d; }
+.toast.ok { background: #052e16; color: #4ade80; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 999; }
+.login-box { background: var(--surface); border: 1px solid rgba(232,0,28,0.3); border-radius: var(--rl); padding: 36px 32px; width: 360px; max-width: 95vw; }
+.login-logo { font-size: 32px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.login-sub { font-size: 11px; color: var(--text3); margin-bottom: 28px; letter-spacing: 2px; text-transform: uppercase; }
+.login-error { background: var(--red-bg); color: var(--red-text); border-radius: var(--r); padding: 10px 12px; font-size: 13px; margin-bottom: 14px; display: none; }
+.login-footer { margin-top: 16px; font-size: 12px; color: var(--text3); text-align: center; }
+/* CLASES */
+.clase-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--rl); padding: 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 16px; }
+.clase-hora { font-size: 22px; font-weight: 900; color: #E8001C; min-width: 70px; }
+.clase-info { flex: 1; }
+.clase-nombre { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.clase-meta { font-size: 12px; color: var(--text3); }
+.clase-plazas { font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: var(--r); background: var(--surface2); }
+.clase-plazas.lleno { color: var(--red-text); background: var(--red-bg); }
+.clase-plazas.ok { color: var(--green-text); background: var(--green-bg); }
+.clase-plazas.poco { color: var(--amber-text); background: var(--amber-bg); }
+/* MEMBRESÍA */
+.membresia-bar { background: var(--surface2); border-radius: 4px; height: 6px; margin-top: 6px; overflow: hidden; }
+.membresia-fill { background: #E8001C; height: 100%; border-radius: 4px; transition: width 0.3s; }
+/* CALENDARIO */
+.cal-wrap { user-select: none; }
+.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-month { font-size: 15px; font-weight: 500; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-dow { font-size: 11px; color: var(--text3); text-align: center; padding: 4px 0; font-weight: 500; }
+.cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 13px; cursor: pointer; transition: all 0.1s; border: none; background: none; color: var(--text); font-family: inherit; }
+.cal-day:hover { background: var(--surface2); }
+.cal-day.present { background: #E8001C; color: #fff; font-weight: 600; }
+.cal-day.today { outline: 2px solid #fff; outline-offset: -2px; }
+.cal-day.empty { cursor: default; pointer-events: none; }
+.cal-day.future { color: var(--text3); cursor: default; pointer-events: none; }
+/* DOC */
+.doc-upload-area { border: 1.5px dashed var(--border); border-radius: var(--r); padding: 18px; text-align: center; cursor: pointer; background: var(--surface2); }
+.doc-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--surface2); border-radius: var(--r); margin-bottom: 6px; }
+.doc-item-name { flex: 1; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-item-type { font-size: 11px; color: var(--text3); background: var(--surface); padding: 2px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">STUDIO <span style="color:#E8001C">8:7</span></div>
+    <div class="login-sub">GYM TRAINING</div>
+    <div class="login-error" id="login-error"></div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="login-email" type="email" placeholder="tu@email.com" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <input class="form-input" id="login-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+    </div>
+    <button class="btn primary" style="width:100%;justify-content:center;margin-top:4px" id="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-footer">Studio 8:7 · Solo para uso autorizado</div>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <button id="toggleSidebar" class="btn small" style="margin:12px 8px 0;width:calc(100% - 16px)" onclick="toggleSide()">☰ Ocultar</button>
+    <div class="logo">
+      <div class="logo-mark">STUDIO <span style="color:#E8001C">8:7</span></div>
+      <div class="logo-sub">GYM TRAINING</div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+  <button id="showSidebar" class="show-btn" onclick="toggleSide()">☰</button>
+  <div class="main" id="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="topbar-role" id="role-badge"></span>
+        <div id="topbar-date" style="font-size:13px;color:var(--text3)"></div>
+        <button class="btn small" onclick="doLogout()"><i class="ti ti-logout"></i> Salir</button>
+      </div>
+    </div>
+    <div class="content" id="content"><div class="loading">Conectando...</div></div>
+  </div>
+</div>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script>
+// ─────────────────────────────────────
+// CREDENCIALES
+// ─────────────────────────────────────
+const SUPABASE_URL = 'https://gfsofbjhmorkgegnbsli.supabase.co/';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdmc29mYmpobW9ya2dlZ25ic2xpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDEzMDUwMywiZXhwIjoyMDk1NzA2NTAzfQ.vJsNUZUeLZZuMheh-cFm-Zl2aMzzbsDzXyN8LnyJkZo';
+// ─────────────────────────────────────
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const today = new Date();
+const todayStr = today.toISOString().slice(0,10);
+const fmt = d => d ? new Date(d).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+const fmtHora = t => t ? t.slice(0,5) : '—';
+const addDays = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return r; };
+const diffDays = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);
+const fileIcon = n => { const e=(n||'').split('.').pop().toLowerCase(); return ['jpg','jpeg','png','gif','webp'].includes(e)?'ti-photo':e==='pdf'?'ti-file-type-pdf':'ti-file'; };
+
+document.getElementById('topbar-date').textContent = today.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+
+// ── Estado global ──
+let state = {
+  rol: null, userId: null, clienteId: null, entrenadorId: null,
+  view: 'dashboard', clientTab: 'info', selectedClient: null,
+  searchClients: '', searchPayments: '', searchProductos: '',
+  searchAsistencia: '', clienteAsistencia: null, calMes: null,
+  showModal: null,
+  // datos
+  clients: [], pagos: [], asistencia: [], productos: [], ventas: [],
+  clases: [], reservas: [], tiposClase: [], entrenadores: [], planes: [], membresias: [],
+  // filtros clases
+  clasesFecha: todayStr,
+};
+
+// ── Toast ──
+function toast(msg, type='ok') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('toast-root').appendChild(el);
+  setTimeout(()=>el.remove(), 3500);
+}
+
+// ── Sidebar toggle ──
+function toggleSide() {
+  const s = document.getElementById('sidebar');
+  const m = document.getElementById('main');
+  const b = document.getElementById('showSidebar');
+  s.classList.toggle('ocultar');
+  m.classList.toggle('expandido');
+  b.classList.toggle('visible');
+}
+
+// ── Carga datos según rol ──
+async function loadAll() {
+  if(state.rol === 'admin') await loadAdmin();
+  else if(state.rol === 'entrenador') await loadEntrenador();
+  else await loadCliente();
+  render();
+}
+
+async function loadAdmin() {
+  const results = await Promise.all([
+    db.from('clientes').select('*').order('created_at',{ascending:false}),
+    db.from('pagos').select('*').order('fecha',{ascending:false}),
+    db.from('asistencia').select('*').order('fecha',{ascending:false}),
+    db.from('productos').select('*').order('nombre',{ascending:true}),
+    db.from('ventas').select('*').order('created_at',{ascending:false}),
+    db.from('clases').select('*, tipos_clase(nombre,color), entrenadores(nombre)').order('fecha').order('hora_inicio'),
+    db.from('reservas').select('*, clientes(nombre,telefono)').order('created_at',{ascending:false}),
+    db.from('tipos_clase').select('*').order('nombre'),
+    db.from('entrenadores').select('*').eq('activo',true).order('nombre'),
+    db.from('planes').select('*').eq('activo',true).order('nombre'),
+    db.from('membresias').select('*, clientes(nombre), planes(nombre)').order('created_at',{ascending:false}),
+  ]);
+  state.clients      = results[0].data||[];
+  state.pagos        = results[1].data||[];
+  state.asistencia   = results[2].data||[];
+  state.productos    = results[3].data||[];
+  state.ventas       = results[4].data||[];
+  state.clases       = results[5].data||[];
+  state.reservas     = results[6].data||[];
+  state.tiposClase   = results[7].data||[];
+  state.entrenadores = results[8].data||[];
+  state.planes       = results[9].data||[];
+  state.membresias   = results[10].data||[];
+}
+
+async function loadEntrenador() {
+  const [{data:clases},{data:reservas},{data:entrenadores}] = await Promise.all([
+    db.from('clases').select('*, tipos_clase(nombre,color), entrenadores(nombre)').eq('entrenador_id', state.entrenadorId).order('fecha').order('hora_inicio'),
+    db.from('reservas').select('*, clientes(nombre,telefono)').order('created_at',{ascending:false}),
+    db.from('entrenadores').select('*'),
+  ]);
+  state.clases = clases||[];
+  state.reservas = reservas||[];
+  state.entrenadores = entrenadores||[];
+}
+
+async function loadCliente() {
+  const [{data:reservas},{data:clases},{data:membresias},{data:tiposClase},{data:entrenadores}] = await Promise.all([
+    db.from('reservas').select('*, clases(*, tipos_clase(nombre,color), entrenadores(nombre))').eq('cliente_id', state.clienteId).order('created_at',{ascending:false}),
+    db.from('clases').select('*, tipos_clase(nombre,color), entrenadores(nombre)').gte('fecha', todayStr).eq('estado','activa').order('fecha').order('hora_inicio'),
+    db.from('membresias').select('*, planes(nombre,clases_por_periodo)').eq('cliente_id', state.clienteId).eq('estado','activa').order('fecha_fin',{ascending:false}).limit(1),
+    db.from('tipos_clase').select('*'),
+    db.from('entrenadores').select('*'),
+  ]);
+  state.reservas = reservas||[];
+  state.clases = clases||[];
+  state.membresias = membresias||[];
+  state.tiposClase = tiposClase||[];
+  state.entrenadores = entrenadores||[];
+}
+
+// ── Auth ──
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const btn   = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  errEl.style.display='none';
+  btn.disabled=true; btn.textContent='Entrando...';
+  const {data,error} = await db.auth.signInWithPassword({email, password:pass});
+  if(error){ errEl.textContent='Email o contraseña incorrectos'; errEl.style.display='block'; btn.disabled=false; btn.textContent='Entrar'; return; }
+  await setupUser(data.user);
+  showApp();
+}
+
+async function setupUser(user) {
+  state.userId = user.id;
+  const {data} = await db.from('usuarios').select('*').eq('id', user.id).single();
+  if(!data) {
+    // Si no tiene registro en usuarios, es admin por defecto
+    state.rol = 'admin';
+  } else {
+    state.rol = data.rol;
+    state.clienteId = data.cliente_id;
+    state.entrenadorId = data.entrenador_id;
+  }
+  document.getElementById('role-badge').textContent = state.rol;
+}
+
+async function doLogout() {
+  await db.auth.signOut();
+  state.rol=null; state.userId=null; state.clienteId=null; state.entrenadorId=null;
+  document.getElementById('login-screen').style.display='flex';
+  document.querySelector('.app').style.display='none';
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display='none';
+  document.querySelector('.app').style.display='flex';
+  // Navegar a vista correcta según rol
+  if(state.rol==='cliente') state.view='mis-reservas';
+  else if(state.rol==='entrenador') state.view='mis-clases';
+  else state.view='dashboard';
+  loadAll();
+}
+
+// ── Nav según rol ──
+const NAV_ADMIN = [
+  {section:'GESTIÓN'},
+  {id:'dashboard',    icon:'ti-dashboard',      label:'Dashboard'},
+  {id:'clients',      icon:'ti-users',          label:'Clientes'},
+  {id:'payments',     icon:'ti-credit-card',    label:'Pagos'},
+  {id:'membresias',   icon:'ti-id-badge',       label:'Membresías'},
+  {section:'CLASES'},
+  {id:'clases-admin', icon:'ti-calendar-event', label:'Clases'},
+  {id:'reservas-admin',icon:'ti-clipboard-list',label:'Reservas'},
+  {section:'OPERACIÓN'},
+  {id:'asistencia',   icon:'ti-calendar-check', label:'Asistencia'},
+  {id:'inventario',   icon:'ti-package',        label:'Inventario'},
+  {id:'alerts',       icon:'ti-bell',           label:'Recordatorios'},
+];
+
+const NAV_ENTRENADOR = [
+  {id:'mis-clases',   icon:'ti-calendar-event', label:'Mis clases'},
+  {id:'asistencia-clase', icon:'ti-clipboard-check', label:'Pasar lista'},
+];
+
+const NAV_CLIENTE = [
+  {id:'mis-reservas', icon:'ti-calendar-heart', label:'Mis reservas'},
+  {id:'reservar',     icon:'ti-calendar-plus',  label:'Reservar clase'},
+  {id:'mi-membresia', icon:'ti-id-badge',       label:'Mi membresía'},
+];
+
+function getNavItems() {
+  if(state.rol==='admin') return NAV_ADMIN;
+  if(state.rol==='entrenador') return NAV_ENTRENADOR;
+  return NAV_CLIENTE;
+}
+
+function renderNav() {
+  const items = getNavItems();
+  const alerts = state.rol==='admin' ? getAlerts() : [];
+  document.getElementById('nav').innerHTML = items.map(n => {
+    if(n.section) return `<div class="nav-section">${n.section}</div>`;
+    const isActive = state.view===n.id;
+    return `<button class="nav-item ${isActive?'active':''}" onclick="navigate('${n.id}')">
+      <i class="ti ${n.icon}"></i>${n.label}
+      ${n.id==='alerts'&&alerts.length?`<span class="alerts-badge">${alerts.length}</span>`:''}
+    </button>`;
+  }).join('');
+}
+
+async function navigate(v) {
+  state.view=v; state.selectedClient=null;
+  const labels = {
+    'dashboard':'Dashboard','clients':'Clientes','payments':'Pagos','membresias':'Membresías',
+    'clases-admin':'Clases','reservas-admin':'Reservas','asistencia':'Asistencia',
+    'inventario':'Inventario','alerts':'Recordatorios',
+    'mis-clases':'Mis Clases','asistencia-clase':'Pasar Lista',
+    'mis-reservas':'Mis Reservas','reservar':'Reservar Clase','mi-membresia':'Mi Membresía',
+    'client-detail':'Cliente',
+  };
+  document.getElementById('page-title').textContent = labels[v]||v;
+  await loadAll();
+}
+
+function render() {
+  renderNav();
+  const el = document.getElementById('content');
+  const v = state.view;
+  // ADMIN
+  if(v==='dashboard')       el.innerHTML = renderDashboard();
+  else if(v==='clients')    el.innerHTML = renderClients();
+  else if(v==='client-detail') el.innerHTML = renderClientDetail();
+  else if(v==='payments')   el.innerHTML = renderPayments();
+  else if(v==='membresias') el.innerHTML = renderMembresias();
+  else if(v==='clases-admin') el.innerHTML = renderClasesAdmin();
+  else if(v==='reservas-admin') el.innerHTML = renderReservasAdmin();
+  else if(v==='asistencia') el.innerHTML = renderAsistencia();
+  else if(v==='inventario') el.innerHTML = renderInventario();
+  else if(v==='alerts')     el.innerHTML = renderAlerts();
+  // ENTRENADOR
+  else if(v==='mis-clases') el.innerHTML = renderMisClases();
+  else if(v==='asistencia-clase') el.innerHTML = renderAsistenciaClase();
+  // CLIENTE
+  else if(v==='mis-reservas') el.innerHTML = renderMisReservas();
+  else if(v==='reservar')   el.innerHTML = renderReservar();
+  else if(v==='mi-membresia') el.innerHTML = renderMiMembresia();
+}
+
+// ═══════════════════════════════════════
+// VISTAS ADMIN
+// ═══════════════════════════════════════
+
+function getAlerts() {
+  const alerts = [];
+  state.clients.forEach(c => {
+    if(c.estado!=='Activo') return;
+    const days = diffDays(today, new Date(c.cobro));
+    if(days===1)            alerts.push({type:'red',   msg:`⚠️ ${c.nombre} vence mañana`, id:c.id});
+    else if(days<=3&&days>=0) alerts.push({type:'amber', msg:`📅 ${c.nombre} vence en ${days} días`, id:c.id});
+    else if(days<0)         alerts.push({type:'red',   msg:`🔴 ${c.nombre} vencido hace ${Math.abs(days)}d`, id:c.id});
+    const pend = state.pagos.find(p=>p.cliente_id===c.id&&p.estado==='Pendiente');
+    if(pend) alerts.push({type:'amber', msg:`💳 ${c.nombre} no ha pagado`, id:c.id});
+  });
+  return alerts;
+}
+
+function renderDashboard() {
+  const activos = state.clients.filter(c=>c.estado==='Activo').length;
+  const pendientes = state.pagos.filter(p=>p.estado==='Pendiente').length;
+  const mes = todayStr.slice(0,7);
+  const ingresos = state.pagos.filter(p=>p.estado==='Pagado'&&p.fecha?.startsWith(mes)).reduce((a,p)=>a+Number(p.monto),0);
+  const clasesHoy = state.clases.filter(c=>c.fecha===todayStr&&c.estado==='activa');
+  const reservasHoy = state.reservas.filter(r=>clasesHoy.find(c=>c.id===r.clase_id)&&r.estado!=='cancelada').length;
+  const alerts = getAlerts();
+  return `
+    <div class="metric-grid">
+      <div class="metric"><div class="metric-label">Clientes activos</div><div class="metric-value">${activos}</div><div class="metric-sub">de ${state.clients.length} totales</div></div>
+      <div class="metric"><div class="metric-label">Pagos pendientes</div><div class="metric-value" style="color:var(--amber)">${pendientes}</div></div>
+      <div class="metric"><div class="metric-label">Ingresos del mes</div><div class="metric-value">$${ingresos.toFixed(0)}</div></div>
+      <div class="metric"><div class="metric-label">Clases hoy</div><div class="metric-value" style="color:#E8001C">${clasesHoy.length}</div><div class="metric-sub">${reservasHoy} reservas</div></div>
+    </div>
+    ${alerts.length?`<div style="margin-bottom:20px"><div class="section-title">Alertas</div>${alerts.slice(0,4).map(a=>`
+      <div class="alert-card" onclick="openClient(${a.id})">
+        <div class="alert-dot ${a.type}"></div><div style="flex:1;font-size:13px">${a.msg}</div>
+        <i class="ti ti-chevron-right" style="color:var(--text3)"></i>
+      </div>`).join('')}</div>`:''}
+    <div class="section-title">Clases de hoy</div>
+    ${clasesHoy.length ? clasesHoy.map(c=>renderClaseCard(c, true)).join('') : '<div class="empty">No hay clases programadas hoy</div>'}
+  `;
+}
+
+function renderClaseCard(c, esAdmin=false) {
+  const reservasClase = state.reservas.filter(r=>r.clase_id===c.id&&r.estado!=='cancelada');
+  const total = reservasClase.length;
+  const max = c.capacidad_maxima;
+  const pct = max>0 ? Math.round(total/max*100) : 0;
+  const lleno = total>=max;
+  const pClass = lleno ? 'lleno' : total>=max*0.75 ? 'poco' : 'ok';
+  const nombre = c.tipos_clase?.nombre || '—';
+  const entrenador = c.entrenadores?.nombre || '—';
+  return `
+    <div class="clase-card">
+      <div class="clase-hora">${fmtHora(c.hora_inicio)}</div>
+      <div class="clase-info">
+        <div class="clase-nombre">${nombre}</div>
+        <div class="clase-meta"><i class="ti ti-user"></i> ${entrenador} &nbsp;·&nbsp; <i class="ti ti-clock"></i> ${fmtHora(c.hora_inicio)}–${fmtHora(c.hora_fin)}</div>
+      </div>
+      <div class="clase-plazas ${pClass}">${total}/${max}</div>
+      ${esAdmin ? `<button class="btn small" onclick="verAsistentesClase(${c.id})"><i class="ti ti-users"></i> Ver</button>` : ''}
+    </div>`;
+}
+
+function renderClients() {
+  const filtered = state.clients.filter(c=>c.nombre.toLowerCase().includes(state.searchClients.toLowerCase())||(c.email||'').toLowerCase().includes(state.searchClients.toLowerCase()));
+  return `
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-search"><i class="ti ti-search" style="color:var(--text3)"></i><input type="text" placeholder="Buscar..." value="${state.searchClients}" oninput="state.searchClients=this.value;render()" /></div>
+        <button class="btn primary" onclick="showModal('new-client')"><i class="ti ti-plus"></i> Nuevo cliente</button>
+      </div>
+      <table><thead><tr><th>Nombre</th><th>Plan</th><th>Importe</th><th>Cobro</th><th>Estado</th></tr></thead>
+      <tbody>${filtered.map(c=>`<tr onclick="openClient(${c.id})">
+        <td><div style="font-weight:700">${c.nombre}</div><div style="font-size:11px;color:var(--text3)">${c.email||''}</div></td>
+        <td><span class="badge ${(c.plan||'').toLowerCase()}">${c.plan||'—'}</span></td>
+        <td>${c.importe?'$'+Number(c.importe).toFixed(2):'—'}</td>
+        <td>${fmt(c.cobro)}</td>
+        <td><span class="badge ${(c.estado||'').toLowerCase()}">${c.estado||'—'}</span></td>
+      </tr>`).join('')||'<tr><td colspan="5" class="empty">Sin clientes</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+
+function renderClientDetail() {
+  const c = state.clients.find(x=>x.id===state.selectedClient);
+  if(!c) return '<div class="empty">No encontrado</div>';
+  const cPagos = state.pagos.filter(p=>p.cliente_id===c.id).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  const cAsist = state.asistencia.filter(a=>a.cliente_id===c.id);
+  const cMemb = state.membresias.filter(m=>m.cliente_id===c.id);
+  const cReservas = state.reservas.filter(r=>r.cliente_id===c.id);
+  const initials = c.nombre.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const pendiente = cPagos.find(p=>p.estado==='Pendiente');
+  const docs = c.documentos||[];
+  return `
+    <div style="margin-bottom:16px"><button class="btn small" onclick="navigate('clients')"><i class="ti ti-arrow-left"></i> Volver</button></div>
+    <div class="table-card" style="padding:20px">
+      <div class="detail-header">
+        <div class="avatar">${initials}</div>
+        <div><div style="font-size:18px;font-weight:700">${c.nombre}</div><div style="font-size:13px;color:var(--text2)">${c.email||''} ${c.telefono?'· '+c.telefono:''}</div></div>
+        <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn small" onclick="showModal('edit-client',${c.id})"><i class="ti ti-edit"></i> Editar</button>
+          ${c.estado==='Activo'?`<button class="btn small danger" onclick="toggleStatus(${c.id},'Inactivo')">Dar de baja</button>`:`<button class="btn small" onclick="toggleStatus(${c.id},'Activo')">Reactivar</button>`}
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab ${state.clientTab==='info'?'active':''}" onclick="state.clientTab='info';render()">Info</button>
+        <button class="tab ${state.clientTab==='pagos'?'active':''}" onclick="state.clientTab='pagos';render()">Pagos</button>
+        <button class="tab ${state.clientTab==='membresia'?'active':''}" onclick="state.clientTab='membresia';render()">Membresía</button>
+        <button class="tab ${state.clientTab==='reservas'?'active':''}" onclick="state.clientTab='reservas';render()">Reservas</button>
+        <button class="tab ${state.clientTab==='docs'?'active':''}" onclick="state.clientTab='docs';render()">Docs ${docs.length?`<span style="background:var(--blue-bg);color:var(--blue-text);border-radius:10px;padding:1px 6px;font-size:10px">${docs.length}</span>`:''}</button>
+        <button class="tab ${state.clientTab==='notas'?'active':''}" onclick="state.clientTab='notas';render()">Notas</button>
+      </div>
+      ${state.clientTab==='info'?`
+        <div class="detail-grid">
+          <div class="detail-field"><div class="detail-field-label">Inicio</div><div class="detail-field-value">${fmt(c.inicio)}</div></div>
+          <div class="detail-field"><div class="detail-field-label">Próximo cobro</div><div class="detail-field-value">${fmt(c.cobro)}</div></div>
+          <div class="detail-field"><div class="detail-field-label">Plan</div><div class="detail-field-value"><span class="badge ${(c.plan||'').toLowerCase()}">${c.plan||'—'}</span></div></div>
+          <div class="detail-field"><div class="detail-field-label">Importe</div><div class="detail-field-value">${c.importe?'$'+Number(c.importe).toFixed(2):'—'}</div></div>
+          <div class="detail-field"><div class="detail-field-label">Teléfono</div><div class="detail-field-value">${c.telefono||'—'}</div></div>
+          <div class="detail-field"><div class="detail-field-label">Estado</div><div class="detail-field-value"><span class="badge ${(c.estado||'').toLowerCase()}">${c.estado||'—'}</span></div></div>
+        </div>
+        ${pendiente?`<div style="background:var(--amber-bg);border-radius:var(--r);padding:12px;font-size:13px;color:var(--amber-text);display:flex;justify-content:space-between;align-items:center">
+          <span>💳 Pago pendiente desde ${fmt(pendiente.fecha)}: $${pendiente.monto}</span>
+          <button class="btn small" onclick="markPaid(${pendiente.id})" style="background:var(--amber);color:#000">Marcar pagado</button>
+        </div>`:''}`:''}
+      ${state.clientTab==='pagos'?`
+        <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn small primary" onclick="showModal('new-payment',${c.id})"><i class="ti ti-plus"></i> Registrar pago</button></div>
+        ${cPagos.map(p=>`<div class="history-item">
+          <i class="ti ${p.estado==='Pagado'?'ti-circle-check':'ti-clock'}" style="color:${p.estado==='Pagado'?'var(--green)':'var(--amber)'}"></i>
+          <div style="flex:1"><div style="font-weight:700">$${Number(p.monto).toFixed(2)}</div><div style="font-size:12px;color:var(--text3)">${fmt(p.fecha)}</div></div>
+          <span class="badge ${p.estado.toLowerCase()}">${p.estado}</span>
+          ${p.estado==='Pendiente'?`<button class="btn small" onclick="markPaid(${p.id})">Pagar</button>`:''}
+        </div>`).join('')||'<div class="empty">Sin pagos</div>'}`:''}
+      ${state.clientTab==='membresia'?`
+        <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn small primary" onclick="showModal('nueva-membresia',${c.id})"><i class="ti ti-plus"></i> Asignar membresía</button></div>
+        ${cMemb.map(m=>{
+          const usadas=m.clases_usadas||0; const total=m.clases_totales||0; const pct=total>0?Math.round(usadas/total*100):0;
+          return `<div class="detail-field" style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font-weight:700">${m.planes?.nombre||'—'}</div><div style="font-size:12px;color:var(--text3)">${fmt(m.fecha_inicio)} → ${fmt(m.fecha_fin)}</div></div>
+              <span class="badge ${m.estado}">${m.estado}</span>
+            </div>
+            <div style="margin-top:10px;font-size:13px;color:var(--text2)">Clases: <strong>${usadas}/${total}</strong></div>
+            <div class="membresia-bar"><div class="membresia-fill" style="width:${pct}%"></div></div>
+          </div>`;
+        }).join('')||'<div class="empty">Sin membresías</div>'}`:''}
+      ${state.clientTab==='reservas'?`
+        ${cReservas.map(r=>{
+          const cl = state.clases.find(x=>x.id===r.clase_id);
+          return `<div class="history-item">
+            <i class="ti ti-calendar-event" style="color:var(--blue)"></i>
+            <div style="flex:1">
+              <div style="font-weight:700">${cl?.tipos_clase?.nombre||'Clase'}</div>
+              <div style="font-size:12px;color:var(--text3)">${fmt(cl?.fecha)} ${fmtHora(cl?.hora_inicio)}</div>
+            </div>
+            <span class="badge ${r.estado}">${r.estado}</span>
+          </div>`;
+        }).join('')||'<div class="empty">Sin reservas</div>'}`:''}
+      ${state.clientTab==='docs'?`
+        <div style="margin-bottom:12px">
+          <label class="doc-upload-area" for="doc-upload-c">
+            <i class="ti ti-upload" style="font-size:20px;color:var(--text3)"></i>
+            <div style="font-size:13px;color:var(--text2);margin-top:4px">Subir documento</div>
+            <input type="file" id="doc-upload-c" multiple onchange="handleDocUpload(event,${c.id})" style="display:none"/>
+          </label>
+        </div>
+        ${docs.map(d=>`<div class="doc-item">
+          <i class="ti ${fileIcon(d.name)}" style="color:var(--blue)"></i>
+          <span class="doc-item-name">${d.name}</span>
+          <span class="doc-item-type">${d.name.split('.').pop().toUpperCase()}</span>
+          <button class="btn small" onclick="openDoc('${d.path}')"><i class="ti ti-eye"></i></button>
+          <button class="btn small danger" onclick="deleteDoc(${c.id},'${d.path}')"><i class="ti ti-trash"></i></button>
+        </div>`).join('')||'<div class="empty">Sin documentos</div>'}`:''}
+      ${state.clientTab==='notas'?`
+        <textarea class="form-input" id="notas-area" style="min-height:140px;resize:vertical">${c.notas||''}</textarea>
+        <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn small primary" onclick="saveNotas(${c.id})">Guardar</button></div>`:''}
+    </div>`;
+}
+
+function renderPayments() {
+  const mes = todayStr.slice(0,7);
+  const pendientes = state.pagos.filter(p=>p.estado==='Pendiente');
+  const cobrado = state.pagos.filter(p=>p.estado==='Pagado'&&p.fecha?.startsWith(mes)).reduce((a,p)=>a+Number(p.monto),0);
+  const enriched = state.pagos.map(p=>({...p,clienteNombre:state.clients.find(x=>x.id===p.cliente_id)?.nombre||'—'}))
+    .filter(p=>p.clienteNombre.toLowerCase().includes(state.searchPayments.toLowerCase()));
+  return `
+    <div class="metric-grid" style="margin-bottom:20px">
+      <div class="metric"><div class="metric-label">Pendiente</div><div class="metric-value" style="color:var(--amber)">$${pendientes.reduce((a,p)=>a+Number(p.monto),0).toFixed(0)}</div></div>
+      <div class="metric"><div class="metric-label">Cobrado este mes</div><div class="metric-value" style="color:var(--green)">$${cobrado.toFixed(0)}</div></div>
+      <div class="metric"><div class="metric-label">Sin pagar</div><div class="metric-value">${pendientes.length}</div></div>
+    </div>
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-search"><i class="ti ti-search" style="color:var(--text3)"></i><input type="text" placeholder="Buscar..." value="${state.searchPayments}" oninput="state.searchPayments=this.value;render()" /></div>
+      </div>
+      <table><thead><tr><th>Cliente</th><th>Fecha</th><th>Importe</th><th>Estado</th><th></th></tr></thead>
+      <tbody>${enriched.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(p=>`<tr onclick="openClient(${p.cliente_id})">
+        <td style="font-weight:700">${p.clienteNombre}</td><td style="color:var(--text2)">${fmt(p.fecha)}</td>
+        <td style="font-weight:700">$${Number(p.monto).toFixed(2)}</td>
+        <td><span class="badge ${p.estado.toLowerCase()}">${p.estado}</span></td>
+        <td>${p.estado==='Pendiente'?`<button class="btn small" onclick="event.stopPropagation();markPaid(${p.id})">Pagar</button>`:'—'}</td>
+      </tr>`).join('')||'<tr><td colspan="5" class="empty">Sin pagos</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+
+function renderMembresias() {
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="section-title" style="margin:0">Membresías activas</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn small" onclick="showModal('nuevo-plan')"><i class="ti ti-plus"></i> Nuevo plan</button>
+        <button class="btn primary" onclick="showModal('nueva-membresia-global')"><i class="ti ti-plus"></i> Asignar membresía</button>
+      </div>
+    </div>
+    <div class="table-card">
+      <table><thead><tr><th>Cliente</th><th>Plan</th><th>Clases usadas</th><th>Válida hasta</th><th>Estado</th></tr></thead>
+      <tbody>${state.membresias.map(m=>{
+        const usadas=m.clases_usadas||0; const total=m.clases_totales||0; const pct=total>0?Math.round(usadas/total*100):0;
+        return `<tr>
+          <td style="font-weight:700">${m.clientes?.nombre||'—'}</td>
+          <td>${m.planes?.nombre||'—'}</td>
+          <td><div style="font-size:13px">${usadas}/${total}</div><div class="membresia-bar" style="width:80px"><div class="membresia-fill" style="width:${pct}%"></div></div></td>
+          <td>${fmt(m.fecha_fin)}</td>
+          <td><span class="badge ${m.estado}">${m.estado}</span></td>
+        </tr>`;
+      }).join('')||'<tr><td colspan="5" class="empty">Sin membresías</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+
+function renderClasesAdmin() {
+  const clasesFiltradas = state.clases.filter(c=>c.fecha===state.clasesFecha);
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn small" onclick="cambiarFechaClases(-1)"><i class="ti ti-chevron-left"></i></button>
+        <input type="date" class="form-input" style="width:160px" value="${state.clasesFecha}" onchange="state.clasesFecha=this.value;render()" />
+        <button class="btn small" onclick="cambiarFechaClases(1)"><i class="ti ti-chevron-right"></i></button>
+        <button class="btn small" onclick="state.clasesFecha=todayStr;render()">Hoy</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn small" onclick="showModal('nuevo-tipo-clase')"><i class="ti ti-tag"></i> Tipo de clase</button>
+        <button class="btn small" onclick="showModal('nuevo-entrenador')"><i class="ti ti-user-plus"></i> Entrenador</button>
+        <button class="btn primary" onclick="showModal('nueva-clase')"><i class="ti ti-plus"></i> Nueva clase</button>
+      </div>
+    </div>
+    ${clasesFiltradas.length ? clasesFiltradas.map(c=>{
+      const reservasClase = state.reservas.filter(r=>r.clase_id===c.id&&r.estado!=='cancelada');
+      const total = reservasClase.length; const max = c.capacidad_maxima;
+      const nombre = c.tipos_clase?.nombre||'—'; const entrenador = c.entrenadores?.nombre||'—';
+      return `
+        <div class="clase-card" style="${c.estado==='cancelada'?'opacity:0.5':''}">
+          <div class="clase-hora">${fmtHora(c.hora_inicio)}</div>
+          <div class="clase-info">
+            <div class="clase-nombre">${nombre} ${c.estado==='cancelada'?'<span class="badge cancelada">Cancelada</span>':''}</div>
+            <div class="clase-meta"><i class="ti ti-user"></i> ${entrenador} &nbsp;·&nbsp; hasta ${fmtHora(c.hora_fin)} &nbsp;·&nbsp; cap. ${max}</div>
+          </div>
+          <div class="clase-plazas ${total>=max?'lleno':total>=max*0.75?'poco':'ok'}">${total}/${max}</div>
+          <button class="btn small" onclick="verAsistentesClase(${c.id})"><i class="ti ti-users"></i> Lista</button>
+          <button class="btn small" onclick="showModal('editar-clase',${c.id})"><i class="ti ti-edit"></i></button>
+          ${c.estado!=='cancelada'?`<button class="btn small danger" onclick="cancelarClase(${c.id})"><i class="ti ti-x"></i></button>`:''}
+        </div>`;
+    }).join('') : '<div class="empty">No hay clases para esta fecha.<br><br><button class="btn primary" onclick="showModal(\'nueva-clase\')"><i class="ti ti-plus"></i> Crear clase</button></div>'}`;
+}
+
+function cambiarFechaClases(dir) {
+  const d = new Date(state.clasesFecha);
+  d.setDate(d.getDate()+dir);
+  state.clasesFecha = d.toISOString().slice(0,10);
+  render();
+}
+
+function renderReservasAdmin() {
+  const todas = state.reservas.map(r=>{
+    const cl = state.clases.find(x=>x.id===r.clase_id);
+    return {...r, claseNombre: cl?.tipos_clase?.nombre||'—', claseFecha: cl?.fecha||'', claseHora: cl?.hora_inicio||''};
+  });
+  return `
+    <div class="metric-grid" style="margin-bottom:20px">
+      <div class="metric"><div class="metric-label">Total reservas</div><div class="metric-value">${todas.length}</div></div>
+      <div class="metric"><div class="metric-label">Activas</div><div class="metric-value" style="color:var(--blue)">${todas.filter(r=>r.estado==='reservada').length}</div></div>
+      <div class="metric"><div class="metric-label">Asistieron</div><div class="metric-value" style="color:var(--green)">${todas.filter(r=>r.estado==='asistio').length}</div></div>
+      <div class="metric"><div class="metric-label">Canceladas</div><div class="metric-value" style="color:var(--text3)">${todas.filter(r=>r.estado==='cancelada').length}</div></div>
+    </div>
+    <div class="table-card">
+      <table><thead><tr><th>Cliente</th><th>Clase</th><th>Fecha</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>${todas.sort((a,b)=>b.created_at?.localeCompare(a.created_at)).slice(0,50).map(r=>`<tr>
+        <td style="font-weight:700">${r.clientes?.nombre||'—'}</td>
+        <td>${r.claseNombre}</td>
+        <td style="color:var(--text2)">${fmt(r.claseFecha)} ${fmtHora(r.claseHora)}</td>
+        <td><span class="badge ${r.estado}">${r.estado}</span></td>
+        <td style="display:flex;gap:4px">
+          ${r.estado==='reservada'?`
+            <button class="btn small success" onclick="cambiarEstadoReserva(${r.id},'asistio')"><i class="ti ti-check"></i></button>
+            <button class="btn small danger" onclick="cambiarEstadoReserva(${r.id},'no_asistio')"><i class="ti ti-x"></i></button>
+            <button class="btn small" onclick="cambiarEstadoReserva(${r.id},'cancelada')">Cancelar</button>
+          `:r.estado==='asistio'?'✅ Asistió':'—'}
+        </td>
+      </tr>`).join('')||'<tr><td colspan="5" class="empty">Sin reservas</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+
+function renderAsistencia() {
+  const hoy = todayStr;
+  const asistHoy = state.asistencia.filter(a=>a.fecha===hoy);
+  const clientesActivos = state.clients.filter(c=>c.estado==='Activo');
+  const sinVenir7 = clientesActivos.filter(c=>{
+    const asis = state.asistencia.filter(a=>a.cliente_id===c.id).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+    if(!asis.length) return true;
+    return diffDays(new Date(asis[0].fecha), today) > 7;
+  });
+  const clienteSel = state.clienteAsistencia ? state.clients.find(c=>c.id===state.clienteAsistencia) : null;
+  const filtrados = clientesActivos.filter(c=>c.nombre.toLowerCase().includes((state.searchAsistencia||'').toLowerCase()));
+  return `
+    <div class="metric-grid" style="margin-bottom:20px">
+      <div class="metric"><div class="metric-label">Asistencias hoy</div><div class="metric-value" style="color:var(--green)">${asistHoy.length}</div></div>
+      <div class="metric"><div class="metric-label">Sin venir +7 días</div><div class="metric-value" style="color:var(--amber)">${sinVenir7.length}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:${clienteSel?'1fr 1fr':'1fr'};gap:20px;align-items:start">
+      <div>
+        <div class="section-title">Pasar lista — ${today.toLocaleDateString('es-ES',{day:'numeric',month:'long'})}</div>
+        <div class="table-card">
+          <div class="table-header"><div class="table-search"><i class="ti ti-search" style="color:var(--text3)"></i><input type="text" placeholder="Buscar..." value="${state.searchAsistencia||''}" oninput="state.searchAsistencia=this.value;render()" /></div></div>
+          <table><thead><tr><th>Cliente</th><th>Última visita</th><th>Hoy</th></tr></thead>
+          <tbody>${filtrados.map(c=>{
+            const asis=state.asistencia.filter(a=>a.cliente_id===c.id).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+            const ultima=asis.length?asis[0].fecha:null;
+            const dias=ultima?diffDays(new Date(ultima),today):null;
+            const vino=asistHoy.find(a=>a.cliente_id===c.id);
+            const color=dias===null?'var(--text3)':dias>14?'var(--red)':dias>7?'var(--amber)':'var(--green)';
+            return `<tr><td onclick="selClienteAsistencia(${c.id})" style="cursor:pointer"><div style="font-weight:700">${c.nombre}</div><div style="font-size:11px;color:${color}">${dias===null?'Sin registros':dias===0?'Hoy':'hace '+dias+'d'}</div></td>
+              <td style="font-size:12px;color:var(--text2)">${ultima?fmt(ultima):'Nunca'}</td>
+              <td>${vino?`<button class="btn small danger" onclick="quitarAsistencia(${vino.id})"><i class="ti ti-x"></i></button>`:`<button class="btn small primary" onclick="marcarAsistencia(${c.id})"><i class="ti ti-check"></i></button>`}</td>
+            </tr>`;
+          }).join('')}</tbody></table>
+        </div>
+      </div>
+      ${clienteSel?`<div>
+        <div class="section-title">📅 ${clienteSel.nombre}</div>
+        <div class="table-card" style="padding:16px"><div id="asist-content">${renderAsistenciaCliente(clienteSel.id)}</div></div>
+      </div>`:''}
+    </div>`;
+}
+
+function renderAsistenciaCliente(clientId) {
+  const asis = state.asistencia.filter(a=>a.cliente_id===clientId);
+  const hoy = todayStr;
+  const vino = asis.find(a=>a.fecha===hoy);
+  const totalMes = asis.filter(a=>a.fecha?.startsWith(hoy.slice(0,7))).length;
+  if(!state.calMes) state.calMes = { y: today.getFullYear(), m: today.getMonth() };
+  const {y,m} = state.calMes;
+  const mesNombre = new Date(y,m,1).toLocaleDateString('es-ES',{month:'long',year:'numeric'});
+  const offset = (new Date(y,m,1).getDay()||7)-1;
+  const diasMes = new Date(y,m+1,0).getDate();
+  const asistSet = new Set(asis.map(a=>a.fecha));
+  const asistMap = {};
+  asis.forEach(a=>{asistMap[a.fecha]=a.id;});
+  let cells='';
+  for(let i=0;i<offset;i++) cells+=`<div class="cal-day empty"></div>`;
+  for(let d=1;d<=diasMes;d++){
+    const f=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const fut=f>todayStr; const esHoy=f===todayStr; const pres=asistSet.has(f);
+    let cls='cal-day'+(fut?' future':'')+(esHoy?' today':'')+(pres?' present':'');
+    const onclick=fut?'':pres?`onclick="quitarAsistencia(${asistMap[f]})"`:`onclick="marcarAsistenciaFecha(${clientId},'${f}')"`;
+    cells+=`<button class="${cls}" ${onclick}>${d}</button>`;
+  }
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;color:var(--text2)">Este mes: <strong>${totalMes}</strong> · Total: <strong>${asis.length}</strong></div>
+      ${vino?`<button class="btn small danger" onclick="quitarAsistencia(${vino.id})">Quitar hoy</button>`:`<button class="btn small primary" onclick="marcarAsistencia(${clientId})">Marcar hoy</button>`}
+    </div>
+    <div class="cal-wrap">
+      <div class="cal-header">
+        <button class="btn small" onclick="calCambiarMes(${clientId},-1)"><i class="ti ti-chevron-left"></i></button>
+        <div class="cal-month">${mesNombre}</div>
+        <button class="btn small" onclick="calCambiarMes(${clientId},1)"><i class="ti ti-chevron-right"></i></button>
+      </div>
+      <div class="cal-grid">
+        ${['L','M','X','J','V','S','D'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}
+        ${cells}
+      </div>
+    </div>`;
+}
+
+function renderInventario() {
+  const mes = todayStr.slice(0,7);
+  const ventasMes = state.ventas.filter(v=>v.created_at?.startsWith(mes));
+  const ingresos = ventasMes.reduce((a,v)=>a+Number(v.total),0);
+  const ganancias = ventasMes.reduce((a,v)=>a+(Number(v.precio_venta)-Number(v.costo))*Number(v.cantidad),0);
+  const stockBajo = state.productos.filter(p=>p.stock<=p.stock_minimo);
+  const filtered = state.productos.filter(p=>p.nombre.toLowerCase().includes((state.searchProductos||'').toLowerCase()));
+  return `
+    <div class="metric-grid" style="margin-bottom:20px">
+      <div class="metric"><div class="metric-label">Productos</div><div class="metric-value">${state.productos.length}</div></div>
+      <div class="metric"><div class="metric-label">Stock bajo</div><div class="metric-value" style="color:var(--red)">${stockBajo.length}</div></div>
+      <div class="metric"><div class="metric-label">Ventas mes</div><div class="metric-value">$${ingresos.toFixed(0)}</div></div>
+      <div class="metric"><div class="metric-label">Ganancia mes</div><div class="metric-value" style="color:var(--green)">$${ganancias.toFixed(0)}</div></div>
+    </div>
+    ${stockBajo.length?`<div style="margin-bottom:20px"><div class="section-title">⚠️ Stock bajo</div>${stockBajo.map(p=>`
+      <div class="alert-card" style="margin-bottom:6px"><div class="alert-dot red"></div>
+        <div style="flex:1;font-size:13px">${p.nombre} — quedan <strong>${p.stock}</strong> (mín ${p.stock_minimo})</div>
+        <button class="btn small" onclick="showModal('reponer',${p.id})">Reponer</button>
+      </div>`).join('')}</div>`:''}
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-search"><i class="ti ti-search" style="color:var(--text3)"></i><input type="text" placeholder="Buscar producto..." value="${state.searchProductos||''}" oninput="state.searchProductos=this.value;render()" /></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn small" onclick="showModal('nueva-venta')"><i class="ti ti-shopping-cart"></i> Venta</button>
+          <button class="btn primary" onclick="showModal('nuevo-producto')"><i class="ti ti-plus"></i> Producto</button>
+        </div>
+      </div>
+      <table><thead><tr><th>Producto</th><th>Stock</th><th>Costo</th><th>Precio</th><th>Margen</th><th></th></tr></thead>
+      <tbody>${filtered.map(p=>{
+        const m=p.precio_venta&&p.costo?(((p.precio_venta-p.costo)/p.precio_venta)*100).toFixed(0)+'%':'—';
+        const c=p.stock<=p.stock_minimo?'var(--red)':p.stock<=p.stock_minimo*2?'var(--amber)':'var(--green)';
+        return `<tr><td><div style="font-weight:700">${p.nombre}</div><div style="font-size:11px;color:var(--text3)">${p.categoria||''}</div></td>
+          <td style="color:${c};font-weight:700">${p.stock}</td><td>$${Number(p.costo).toFixed(2)}</td>
+          <td style="font-weight:700">$${Number(p.precio_venta).toFixed(2)}</td><td style="color:var(--green)">${m}</td>
+          <td style="display:flex;gap:4px">
+            <button class="btn small primary" onclick="showModal('venta-rapida',${p.id})"><i class="ti ti-shopping-cart"></i></button>
+            <button class="btn small" onclick="showModal('editar-producto',${p.id})"><i class="ti ti-edit"></i></button>
+          </td></tr>`;
+      }).join('')||'<tr><td colspan="6" class="empty">Sin productos</td></tr>'}
+      </tbody></table>
+    </div>
+    ${state.ventas.length?`<div style="margin-top:20px"><div class="section-title">Últimas ventas</div>
+      <div class="table-card"><table><thead><tr><th>Producto</th><th>Cantidad</th><th>Total</th><th>Fecha</th></tr></thead>
+      <tbody>${state.ventas.slice(0,10).map(v=>{const p=state.productos.find(x=>x.id===v.producto_id);return`<tr>
+        <td style="font-weight:700">${p?.nombre||'—'}</td><td>${v.cantidad}</td>
+        <td style="font-weight:700;color:var(--green)">$${Number(v.total).toFixed(2)}</td>
+        <td style="color:var(--text2)">${v.created_at?fmt(v.created_at.slice(0,10)):'—'}</td>
+      </tr>`;}).join('')}</tbody></table></div></div>`:''}`;
+}
+
+function renderAlerts() {
+  const alerts = getAlerts();
+  return `
+    <div style="margin-bottom:12px;font-size:13px;color:var(--text2)">${alerts.length} alerta${alerts.length!==1?'s':''}</div>
+    ${alerts.map(a=>`<div class="alert-card" onclick="openClient(${a.id})" style="margin-bottom:8px">
+      <div class="alert-dot ${a.type}"></div><div style="flex:1;font-size:14px">${a.msg}</div>
+      <i class="ti ti-chevron-right" style="color:var(--text3)"></i>
+    </div>`).join('')||'<div class="empty">Sin alertas ✅</div>'}`;
+}
+
+// ═══════════════════════════════════════
+// VISTAS ENTRENADOR
+// ═══════════════════════════════════════
+
+function renderMisClases() {
+  const misClases = state.clases.filter(c=>c.fecha>=todayStr&&c.estado==='activa').slice(0,20);
+  const hoy = misClases.filter(c=>c.fecha===todayStr);
+  const proximas = misClases.filter(c=>c.fecha>todayStr);
+  return `
+    <div class="metric-grid" style="margin-bottom:20px">
+      <div class="metric"><div class="metric-label">Clases hoy</div><div class="metric-value" style="color:#E8001C">${hoy.length}</div></div>
+      <div class="metric"><div class="metric-label">Próximas clases</div><div class="metric-value">${proximas.length}</div></div>
+    </div>
+    ${hoy.length?`<div class="section-title">HOY</div>${hoy.map(c=>renderClaseCardEntrenador(c)).join('')}`:''}
+    ${proximas.length?`<div class="section-title" style="margin-top:16px">PRÓXIMAS</div>${proximas.slice(0,10).map(c=>renderClaseCardEntrenador(c)).join('')}`:''}
+    ${!hoy.length&&!proximas.length?'<div class="empty">No tienes clases programadas</div>':''}`;
+}
+
+function renderClaseCardEntrenador(c) {
+  const reservasClase = state.reservas.filter(r=>r.clase_id===c.id&&r.estado!=='cancelada');
+  const total=reservasClase.length; const max=c.capacidad_maxima;
+  return `<div class="clase-card">
+    <div class="clase-hora">${fmtHora(c.hora_inicio)}</div>
+    <div class="clase-info">
+      <div class="clase-nombre">${c.tipos_clase?.nombre||'—'}</div>
+      <div class="clase-meta">${c.fecha===todayStr?'<strong style="color:#E8001C">Hoy</strong> · ':fmt(c.fecha)+' · '}hasta ${fmtHora(c.hora_fin)}</div>
+    </div>
+    <div class="clase-plazas ${total>=max?'lleno':total>=max*0.75?'poco':'ok'}">${total}/${max}</div>
+    <button class="btn small primary" onclick="verAsistentesClaseEntrenador(${c.id})"><i class="ti ti-clipboard-check"></i> Lista</button>
+  </div>`;
+}
+
+function renderAsistenciaClase() {
+  const clasesHoy = state.clases.filter(c=>c.fecha===todayStr&&c.estado==='activa');
+  if(!clasesHoy.length) return '<div class="empty">No tienes clases hoy</div>';
+  return clasesHoy.map(c=>{
+    const reservasClase = state.reservas.filter(r=>r.clase_id===c.id&&r.estado!=='cancelada');
+    return `
+      <div style="margin-bottom:24px">
+        <div class="section-title">${fmtHora(c.hora_inicio)} — ${c.tipos_clase?.nombre||'Clase'}</div>
+        <div class="table-card"><table><thead><tr><th>Cliente</th><th>Teléfono</th><th>Estado</th><th>Asistencia</th></tr></thead>
+        <tbody>${reservasClase.map(r=>`<tr>
+          <td style="font-weight:700">${r.clientes?.nombre||'—'}</td>
+          <td style="color:var(--text2)">${r.clientes?.telefono||'—'}</td>
+          <td><span class="badge ${r.estado}">${r.estado}</span></td>
+          <td style="display:flex;gap:4px">
+            ${r.estado==='reservada'?`
+              <button class="btn small success" onclick="cambiarEstadoReserva(${r.id},'asistio')"><i class="ti ti-check"></i> Asistió</button>
+              <button class="btn small danger" onclick="cambiarEstadoReserva(${r.id},'no_asistio')"><i class="ti ti-x"></i> No</button>
+            `:r.estado==='asistio'?'✅':r.estado==='no_asistio'?'❌':'—'}
+          </td>
+        </tr>`).join('')||'<tr><td colspan="4" class="empty">Sin reservas</td></tr>'}
+        </tbody></table></div>
+      </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// VISTAS CLIENTE
+// ═══════════════════════════════════════
+
+function renderMisReservas() {
+  const memb = state.membresias[0];
+  const activas = state.reservas.filter(r=>r.estado==='reservada');
+  const historial = state.reservas.filter(r=>r.estado!=='reservada');
+  return `
+    ${memb?`<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:1px">Mi membresía</div>
+          <div style="font-size:16px;font-weight:700;margin-top:2px">${memb.planes?.nombre||'—'}</div></div>
+        <div style="text-align:right"><div style="font-size:24px;font-weight:900;color:#E8001C">${(memb.clases_totales||0)-(memb.clases_usadas||0)}</div>
+          <div style="font-size:11px;color:var(--text3)">clases restantes</div></div>
+      </div>
+      <div class="membresia-bar" style="margin-top:10px"><div class="membresia-fill" style="width:${memb.clases_totales?Math.round((memb.clases_usadas||0)/memb.clases_totales*100):0}%"></div></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Válida hasta ${fmt(memb.fecha_fin)}</div>
+    </div>`:`<div style="background:var(--red-bg);border-radius:var(--rl);padding:14px;margin-bottom:20px;font-size:13px;color:var(--red-text)">
+      ⚠️ No tienes una membresía activa. Contacta con el gimnasio para activar tu plan.
+    </div>`}
+    <div class="section-title">Próximas reservas</div>
+    ${activas.length?activas.map(r=>{
+      const cl=r.clases; if(!cl) return '';
+      const diasRestantes=cl.fecha?diffDays(today,new Date(cl.fecha)):0;
+      const puedeCanc=diasRestantes>=0;
+      const hrsRestantes=cl.fecha&&cl.hora_inicio?diffDays(today,new Date(cl.fecha+' '+cl.hora_inicio))*24:99;
+      const recupera=hrsRestantes>=12;
+      return `<div class="clase-card">
+        <div class="clase-hora">${fmtHora(cl.hora_inicio)}</div>
+        <div class="clase-info">
+          <div class="clase-nombre">${cl.tipos_clase?.nombre||'—'}</div>
+          <div class="clase-meta">${fmt(cl.fecha)} · ${cl.entrenadores?.nombre||'—'}</div>
+        </div>
+        <span class="badge reservada">Reservada</span>
+        ${puedeCanc?`<button class="btn small danger" onclick="cancelarMiReserva(${r.id},${recupera})" title="${recupera?'Recuperarás la clase':'No recuperarás la clase (menos de 12h)'}">
+          <i class="ti ti-x"></i> ${recupera?'Cancelar':'Cancelar (sin recuperar)'}
+        </button>`:''}
+      </div>`;
+    }).join(''):'<div class="empty">Sin reservas próximas. <button class="btn small primary" onclick="navigate(\'reservar\')" style="margin-top:8px">Reservar clase</button></div>'}
+    ${historial.length?`<div class="section-title" style="margin-top:20px">Historial</div>
+      ${historial.slice(0,10).map(r=>{const cl=r.clases;return`<div class="clase-card" style="opacity:0.7">
+        <div class="clase-hora" style="font-size:14px">${fmtHora(cl?.hora_inicio)}</div>
+        <div class="clase-info"><div class="clase-nombre">${cl?.tipos_clase?.nombre||'—'}</div><div class="clase-meta">${fmt(cl?.fecha)}</div></div>
+        <span class="badge ${r.estado}">${r.estado}</span>
+      </div>`;}).join('')}`:''}`;
+}
+
+function renderReservar() {
+  const memb = state.membresias[0];
+  const clasesDisp = state.clases;
+  const porFecha = {};
+  clasesDisp.forEach(c=>{ if(!porFecha[c.fecha]) porFecha[c.fecha]=[]; porFecha[c.fecha].push(c); });
+  const fechas = Object.keys(porFecha).sort().slice(0,7);
+  return `
+    ${!memb?`<div style="background:var(--red-bg);border-radius:var(--rl);padding:14px;margin-bottom:20px;font-size:13px;color:var(--red-text)">
+      ⚠️ Necesitas una membresía activa para reservar clases.
+    </div>`:''}
+    ${memb&&(memb.clases_totales-memb.clases_usadas)<=0?`<div style="background:var(--amber-bg);border-radius:var(--rl);padding:14px;margin-bottom:20px;font-size:13px;color:var(--amber-text)">
+      ⚠️ Has agotado las clases de tu membresía actual. Renueva tu plan para seguir reservando.
+    </div>`:''}
+    ${fechas.length?fechas.map(fecha=>{
+      const clasesDia = porFecha[fecha];
+      const esHoy = fecha===todayStr;
+      const esMañana = fecha===addDays(today,1).toISOString().slice(0,10);
+      const label = esHoy?'HOY':esMañana?'MAÑANA':new Date(fecha).toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'}).toUpperCase();
+      return `<div class="section-title">${label}</div>
+        ${clasesDia.map(c=>{
+          const reservasClase = state.reservas.filter(r=>r.clase_id===c.id&&r.estado!=='cancelada');
+          const total=reservasClase.length; const max=c.capacidad_maxima; const lleno=total>=max;
+          const yaReserve = state.reservas.find(r=>r.clase_id===c.id&&r.cliente_id===state.clienteId&&r.estado==='reservada');
+          const sinClases = memb&&(memb.clases_totales-memb.clases_usadas)<=0;
+          return `<div class="clase-card">
+            <div class="clase-hora">${fmtHora(c.hora_inicio)}</div>
+            <div class="clase-info">
+              <div class="clase-nombre">${c.tipos_clase?.nombre||'—'}</div>
+              <div class="clase-meta"><i class="ti ti-user"></i> ${c.entrenadores?.nombre||'—'} · hasta ${fmtHora(c.hora_fin)}</div>
+            </div>
+            <div class="clase-plazas ${lleno?'lleno':total>=max*0.75?'poco':'ok'}">${total}/${max}</div>
+            ${yaReserve?`<span class="badge reservada">✓ Reservada</span>`
+              :lleno?`<button class="btn small" disabled>Lleno</button>`
+              :!memb||sinClases?`<button class="btn small" disabled>Sin membresía</button>`
+              :`<button class="btn primary" onclick="hacerReserva(${c.id})"><i class="ti ti-calendar-plus"></i> Reservar</button>`}
+          </div>`;
+        }).join('')}`;
+    }).join('') : '<div class="empty">No hay clases disponibles próximamente</div>'}`;
+}
+
+function renderMiMembresia() {
+  const memb = state.membresias[0];
+  if(!memb) return '<div class="empty">No tienes una membresía activa.<br>Contacta con el gimnasio.</div>';
+  const usadas=memb.clases_usadas||0; const total=memb.clases_totales||0; const restantes=total-usadas;
+  const pct=total>0?Math.round(usadas/total*100):0;
+  return `
+    <div class="table-card" style="padding:24px;max-width:480px">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:32px;font-weight:900;color:#E8001C">${restantes}</div>
+        <div style="font-size:14px;color:var(--text2)">clases restantes</div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-field"><div class="detail-field-label">Plan</div><div class="detail-field-value">${memb.planes?.nombre||'—'}</div></div>
+        <div class="detail-field"><div class="detail-field-label">Estado</div><div class="detail-field-value"><span class="badge ${memb.estado}">${memb.estado}</span></div></div>
+        <div class="detail-field"><div class="detail-field-label">Inicio</div><div class="detail-field-value">${fmt(memb.fecha_inicio)}</div></div>
+        <div class="detail-field"><div class="detail-field-label">Vence</div><div class="detail-field-value">${fmt(memb.fecha_fin)}</div></div>
+      </div>
+      <div style="margin-top:16px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+          <span style="color:var(--text2)">Clases usadas</span><span style="font-weight:700">${usadas} / ${total}</span>
+        </div>
+        <div class="membresia-bar" style="height:10px"><div class="membresia-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div style="margin-top:20px;text-align:center">
+        <button class="btn primary" onclick="navigate('reservar')"><i class="ti ti-calendar-plus"></i> Reservar clase</button>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════
+function showModal(type, id) { state.showModal={type,id}; renderModal(); }
+function closeModal() { state.showModal=null; renderModal(); }
+
+function renderModal() {
+  const root = document.getElementById('modal-root');
+  if(!state.showModal){root.innerHTML='';return;}
+  const {type,id} = state.showModal;
+  const c = id ? state.clients.find(x=>x.id===id) : null;
+  const p = id ? state.productos.find(x=>x.id===id) : null;
+  const cl = id ? state.clases.find(x=>x.id===id) : null;
+  const PLANES_TIPO = ['Mensual','Trimestral','Anual'];
+  const CATS = ['Suplementos','Bebidas','Snacks','Ropa','Accesorios','Otro'];
+  let inner = '';
+
+  if(type==='new-client') {
+    const hoy=todayStr; const mes=addDays(today,30).toISOString().slice(0,10);
+    inner=`<div class="modal-title">Nuevo cliente <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="f-nombre" /></div>
+      <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="f-tel" /></div></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="f-email" type="email" /></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Inicio</label><input class="form-input" id="f-inicio" type="date" value="${hoy}" /></div>
+      <div class="form-group"><label class="form-label">Próximo cobro</label><input class="form-input" id="f-cobro" type="date" value="${mes}" /></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Plan</label><select class="form-input" id="f-plan">${PLANES_TIPO.map(p=>`<option>${p}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Importe ($)</label><input class="form-input" id="f-importe" type="number" step="0.01" /></div></div>
+      <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="f-notas" style="min-height:70px;resize:vertical"></textarea></div>
+      <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="saveNewClient()">Guardar</button></div>`;
+  }
+  if(type==='edit-client'&&c) {
+    inner=`<div class="modal-title">Editar — ${c.nombre} <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="f-nombre" value="${c.nombre}" /></div>
+      <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="f-tel" value="${c.telefono||''}" /></div></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="f-email" value="${c.email||''}" /></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Inicio</label><input class="form-input" id="f-inicio" type="date" value="${c.inicio||''}" /></div>
+      <div class="form-group"><label class="form-label">Cobro</label><input class="form-input" id="f-cobro" type="date" value="${c.cobro||''}" /></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Plan</label><select class="form-input" id="f-plan">${PLANES_TIPO.map(pt=>`<option ${pt===c.plan?'selected':''}>${pt}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Importe ($)</label><input class="form-input" id="f-importe" type="number" step="0.01" value="${c.importe||''}" /></div></div>
+      <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="saveEditClient(${c.id})">Guardar</button></div>`;
+  }
+  if(type==='new-payment'&&c) {
+    inner=`<div class="modal-title">Registrar pago — ${c.nombre} <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Fecha</label><input class="form-input" id="f-fecha" type="date" value="${todayStr}" /></div>
+      <div class="form-group"><label class="form-label">Importe ($)</label><input class="form-input" id="f-monto" type="number" step="0.01" value="${c.importe||35}" /></div></div>
+      <div class="form-group"><label class="form-label">Estado</label><select class="form-input" id="f-estado"><option>Pagado</option><option>Pendiente</option></select></div>
+      <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="saveNewPayment(${c.id})">Registrar</button></div>`;
+  }
+  if(type==='nueva-membresia'||type==='nueva-membresia-global') {
+    const clienteId = type==='nueva-membresia' ? id : null;
+    inner=`<div class="modal-title">Asignar membresía <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      ${!clienteId?`<div class="form-group"><label class="form-label">Cliente</label><select class="form-input" id="f-mclient">${state.clients.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('')}</select></div>`:''}
+      <div class="form-group"><label class="form-label">Plan</label><select class="form-input" id="f-mplan" onchange="actualizarClasesPlan()">${state.planes.map(p=>`<option value="${p.id}" data-clases="${p.clases_por_periodo}" data-dias="${p.periodo_dias}">${p.nombre} (${p.clases_por_periodo} clases)</option>`).join('')}</select></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Fecha inicio</label><input class="form-input" id="f-minicio" type="date" value="${todayStr}" onchange="actualizarClasesPlan()" /></div>
+      <div class="form-group"><label class="form-label">Fecha fin</label><input class="form-input" id="f-mfin" type="date" /></div></div>
+      <div class="form-group"><label class="form-label">Clases incluidas</label><input class="form-input" id="f-mclases" type="number" /></div>
+      <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="saveMembresia(${clienteId||'null'})">Asignar</button></div>`;
+  }
+  if(type==='nuevo-plan') {
+    inner=`<div class="modal-title">Nuevo plan <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="f-pnombre2" placeholder="Ej: Plan Mensual 8 clases" /></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Clases por período</label><input class="form-input" id="f-pclases" type="number" value="8" /></div>
+      <div class="form-group"><label class="form-label">Período (días)</label><input class="form-input" id="f-pdias" type="number" value="30" /></div></div>
+      <div class="form-group"><label class="form-label">Precio ($)</label><input class="form-input" id="f-pprecio2" type="number" step="0.01" /></div>
+      <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="saveNuevoPlan()">Guardar plan</button></div>`;
+  }
+  if(type==='nuevo-tipo-clase') {
+    inner=`<div class="modal-title">Nuevo tipo de clase <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="f-tcnombre" placeholder="Ej: Full Body, Strength..." /></div>
+      <div class="form-group"><label class="form-label">Duración (minutos)</label><input class="form-input" id="f-tcdur" type="number" value="60" /></div>
+      <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="saveNuevoTipoClase()">Guardar</button></div>`;
+  }
+  if(type==='nuevo-entrenador') {
+    inner=`<div class="modal-title">Nuevo entrenador <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="f-enombre" /></div>
+      <div class="form-group"><label class="form-label">Especialidad</label><input class="form-input" id="f-eesp" placeholder="Fuerza, Cardio..." /></div>
+      <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="saveNuevoEntrenador()">Guardar</button></div>`;
+  }
+  if(type==='nueva-clase') {
+    inner=`<div class="modal-title">Nueva clase <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="form-group"><label class="form-label">Tipo de clase</label><select class="form-input" id="f-ctipo">${state.tiposClase.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join('')||'<option value="">— Crea primero un tipo de clase —</option>'}</select></div>
+      <div class="form-group"><label class="form-label">Entrenador</label><select class="form-input" id="f-centrenador">${state.entrenadores.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('')||'<option value="">— Crea primero un entrenador —</option>'}</select></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Fecha</label><input class="form-input" id="f-cfecha" type="date" value="${state.clasesFecha}" /></div>
+      <div class="form-group"><label class="form-label">Capacidad máxima</label><input class="form-input" id="f-ccap" type="number" value="8" /></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Hora inicio</label><input class="form-input" id="f-cinicio" type="time" value="08:00" /></div>
+      <div class="form-group"><label class="form-label">Hora fin</label><input class="form-input" id="f-cfin" type="time" value="09:00" /></div></div>
+      <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="f-cnotas" style="min-height:60px;resize:vertical"></textarea></div>
+      <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="saveNuevaClase()">Crear clase</button></div>`;
+  }
+  if(type==='editar-clase'&&cl) {
+    inner=`<div class="modal-title">Editar clase <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="form-group"><label class="form-label">Tipo de clase</label><select class="form-input" id="f-ctipo">${state.tiposClase.map(t=>`<option value="${t.id}" ${t.id===cl.tipo_clase_id?'selected':''}>${t.nombre}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Entrenador</label><select class="form-input" id="f-centrenador">${state.entrenadores.map(e=>`<option value="${e.id}" ${e.id===cl.entrenador_id?'selected':''}>${e.nombre}</option>`).join('')}</select></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Fecha</label><input class="form-input" id="f-cfecha" type="date" value="${cl.fecha}" /></div>
+      <div class="form-group"><label class="form-label">Capacidad</label><input class="form-input" id="f-ccap" type="number" value="${cl.capacidad_maxima}" /></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Hora inicio</label><input class="form-input" id="f-cinicio" type="time" value="${cl.hora_inicio?.slice(0,5)}" /></div>
+      <div class="form-group"><label class="form-label">Hora fin</label><input class="form-input" id="f-cfin" type="time" value="${cl.hora_fin?.slice(0,5)}" /></div></div>
+      <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="saveEditarClase(${cl.id})">Guardar</button></div>`;
+  }
+  if(type==='ver-asistentes') {
+    const clase = state.clases.find(x=>x.id===id);
+    const reservasClase = state.reservas.filter(r=>r.clase_id===id&&r.estado!=='cancelada');
+    inner=`<div class="modal-title">${clase?.tipos_clase?.nombre||'Clase'} — ${fmt(clase?.fecha)} ${fmtHora(clase?.hora_inicio)} <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div style="margin-bottom:12px;font-size:13px;color:var(--text2)">${reservasClase.length}/${clase?.capacidad_maxima} plazas ocupadas</div>
+      ${reservasClase.map(r=>`<div class="history-item">
+        <i class="ti ti-user" style="color:var(--blue)"></i>
+        <div style="flex:1"><div style="font-weight:700">${r.clientes?.nombre||'—'}</div><div style="font-size:11px;color:var(--text3)">${r.clientes?.telefono||''}</div></div>
+        <span class="badge ${r.estado}">${r.estado}</span>
+        ${r.estado==='reservada'?`
+          <button class="btn small success" onclick="cambiarEstadoReserva(${r.id},'asistio')"><i class="ti ti-check"></i></button>
+          <button class="btn small danger" onclick="cambiarEstadoReserva(${r.id},'no_asistio')"><i class="ti ti-x"></i></button>
+        `:''}
+      </div>`).join('')||'<div class="empty">Sin reservas</div>'}`;
+  }
+  // Inventario modales
+  if(type==='nuevo-producto') {
+    inner=`<div class="modal-title">Nuevo producto <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="f-pnombre" /></div>
+      <div class="form-group"><label class="form-label">Categoría</label><select class="form-input" id="f-pcat">${CATS.map(c=>`<option>${c}</option>`).join('')}</select></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Costo ($)</label><input class="form-input" id="f-pcosto" type="number" step="0.01" value="0" /></div>
+      <div class="form-group"><label class="form-label">Precio venta ($)</label><input class="form-input" id="f-pprecio" type="number" step="0.01" value="0" /></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Stock</label><input class="form-input" id="f-pstock" type="number" value="0" /></div>
+      <div class="form-group"><label class="form-label">Stock mínimo</label><input class="form-input" id="f-pmin" type="number" value="5" /></div></div>
+      <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="saveNuevoProducto()">Guardar</button></div>`;
+  }
+  if(type==='editar-producto'&&p) {
+    inner=`<div class="modal-title">Editar — ${p.nombre} <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="f-pnombre" value="${p.nombre}" /></div>
+      <div class="form-group"><label class="form-label">Categoría</label><select class="form-input" id="f-pcat">${CATS.map(cat=>`<option ${cat===p.categoria?'selected':''}>${cat}</option>`).join('')}</select></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Costo ($)</label><input class="form-input" id="f-pcosto" type="number" step="0.01" value="${p.costo||0}" /></div>
+      <div class="form-group"><label class="form-label">Precio venta ($)</label><input class="form-input" id="f-pprecio" type="number" step="0.01" value="${p.precio_venta||0}" /></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Stock</label><input class="form-input" id="f-pstock" type="number" value="${p.stock||0}" /></div>
+      <div class="form-group"><label class="form-label">Stock mínimo</label><input class="form-input" id="f-pmin" type="number" value="${p.stock_minimo||5}" /></div></div>
+      <div class="form-actions"><button class="btn danger" onclick="eliminarProducto(${p.id})">Eliminar</button><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="saveEditarProducto(${p.id})">Guardar</button></div>`;
+  }
+  if(type==='reponer'&&p) {
+    inner=`<div class="modal-title">Reponer — ${p.nombre} <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="form-group"><label class="form-label">Stock actual</label><input class="form-input" disabled value="${p.stock}" /></div>
+      <div class="form-group"><label class="form-label">Unidades a añadir</label><input class="form-input" id="f-reponer" type="number" value="10" min="1" /></div>
+      <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="reponerStock(${p.id},${p.stock})">Reponer</button></div>`;
+  }
+  if(type==='venta-rapida'&&p) {
+    inner=`<div class="modal-title">Vender — ${p.nombre} <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="form-group"><label class="form-label">Stock</label><input class="form-input" disabled value="${p.stock} unidades" /></div>
+      <div class="form-group"><label class="form-label">Precio</label><input class="form-input" disabled value="$${p.precio_venta}" /></div>
+      <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" id="f-vcantidad" type="number" value="1" min="1" max="${p.stock}" /></div>
+      <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="registrarVentaRapida(${p.id})">Registrar</button></div>`;
+  }
+  if(type==='nueva-venta') {
+    inner=`<div class="modal-title">Registrar venta <button class="btn small" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+      <div class="form-group"><label class="form-label">Producto *</label><select class="form-input" id="f-vprod" onchange="actualizarPrecioVenta()">${state.productos.map(p=>`<option value="${p.id}" data-precio="${p.precio_venta}" data-stock="${p.stock}">${p.nombre} (stock: ${p.stock})</option>`).join('')}</select></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" id="f-vcantidad" type="number" value="1" min="1" oninput="actualizarPrecioVenta()" /></div>
+      <div class="form-group"><label class="form-label">Precio unitario ($)</label><input class="form-input" id="f-vprecio" type="number" step="0.01" /></div></div>
+      <div id="venta-total" style="background:var(--surface2);border-radius:var(--r);padding:12px;font-size:14px;color:var(--text2);margin-bottom:4px"></div>
+      <div class="form-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" id="save-btn" onclick="registrarVenta()">Registrar</button></div>`;
+  }
+
+  root.innerHTML=`<div class="modal-overlay" onclick="event.target===this&&closeModal()"><div class="modal">${inner}</div></div>`;
+  if(type==='nueva-membresia'||type==='nueva-membresia-global') setTimeout(actualizarClasesPlan, 50);
+  if(type==='nueva-venta') setTimeout(actualizarPrecioVenta, 50);
+}
+
+// ═══════════════════════════════════════
+// ACCIONES
+// ═══════════════════════════════════════
+
+async function openClient(id) {
+  state.selectedClient=id; state.view='client-detail'; state.clientTab='info';
+  state.calMes={y:today.getFullYear(),m:today.getMonth()};
+  document.getElementById('page-title').textContent = state.clients.find(x=>x.id===id)?.nombre||'Cliente';
+  await loadAll();
+}
+
+async function toggleStatus(id, nuevoEstado) {
+  await db.from('clientes').update({estado:nuevoEstado}).eq('id',id);
+  toast(nuevoEstado==='Activo'?'Cliente reactivado':'Cliente dado de baja');
+  await loadAll();
+}
+
+async function markPaid(pagoId) {
+  await db.from('pagos').update({estado:'Pagado'}).eq('id',pagoId);
+  toast('Pago marcado ✓','ok');
+  await loadAll();
+}
+
+async function saveNotas(clientId) {
+  const notas=document.getElementById('notas-area').value;
+  await db.from('clientes').update({notas}).eq('id',clientId);
+  toast('Notas guardadas ✓','ok');
+}
+
+// Docs
+async function uploadDoc(file, folder) {
+  const ext=file.name.split('.').pop();
+  const path=`${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const {error}=await db.storage.from('Documentos').upload(path,file);
+  if(error) throw error;
+  return {name:file.name, path, size:file.size, fecha:new Date().toISOString()};
+}
+async function getDocUrl(path) { const {data}=await db.storage.from('Documentos').createSignedUrl(path,60); return data?.signedUrl; }
+async function openDoc(path) { const url=await getDocUrl(path); if(url)window.open(url,'_blank'); else toast('Error al abrir','error'); }
+async function deleteDoc(clientId, path) {
+  if(!confirm('¿Eliminar?')) return;
+  await db.storage.from('Documentos').remove([path]);
+  const c=state.clients.find(x=>x.id===clientId);
+  const docs=(c.documentos||[]).filter(d=>d.path!==path);
+  await db.from('clientes').update({documentos:docs}).eq('id',clientId);
+  toast('Eliminado');
+  await loadAll();
+}
+async function handleDocUpload(event, clientId) {
+  const files=[...event.target.files]; if(!files.length)return;
+  try {
+    const c=state.clients.find(x=>x.id===clientId);
+    const docsActuales=c.documentos||[];
+    toast('Subiendo...');
+    const nuevos=await Promise.all(files.map(f=>uploadDoc(f,`clientes/${clientId}`)));
+    await db.from('clientes').update({documentos:[...docsActuales,...nuevos]}).eq('id',clientId);
+    toast(`${nuevos.length} documento(s) subido(s) ✓`,'ok');
+    await loadAll();
+  } catch(e){toast('Error al subir','error');}
+}
+
+// Clientes
+async function saveNewClient() {
+  const nombre=document.getElementById('f-nombre').value.trim();
+  if(!nombre){toast('Nombre obligatorio','error');return;}
+  setBtnLoading('save-btn',true);
+  const {error}=await db.from('clientes').insert({
+    nombre, telefono:document.getElementById('f-tel').value,
+    email:document.getElementById('f-email').value,
+    inicio:document.getElementById('f-inicio').value||null,
+    cobro:document.getElementById('f-cobro').value||null,
+    plan:document.getElementById('f-plan').value,
+    importe:parseFloat(document.getElementById('f-importe').value)||null,
+    notas:document.getElementById('f-notas').value, estado:'Activo', documentos:[],
+  });
+  if(error){toast('Error al crear','error');setBtnLoading('save-btn',false);return;}
+  toast('Cliente creado ✓','ok'); closeModal(); await navigate('clients');
+}
+async function saveEditClient(id) {
+  setBtnLoading('save-btn',true);
+  await db.from('clientes').update({
+    nombre:document.getElementById('f-nombre').value, telefono:document.getElementById('f-tel').value,
+    email:document.getElementById('f-email').value, inicio:document.getElementById('f-inicio').value||null,
+    cobro:document.getElementById('f-cobro').value||null, plan:document.getElementById('f-plan').value,
+    importe:parseFloat(document.getElementById('f-importe').value)||null,
+  }).eq('id',id);
+  toast('Guardado ✓','ok'); closeModal(); await loadAll();
+}
+async function saveNewPayment(clientId) {
+  setBtnLoading('save-btn',true);
+  await db.from('pagos').insert({
+    cliente_id:clientId, fecha:document.getElementById('f-fecha').value,
+    monto:parseFloat(document.getElementById('f-monto').value),
+    estado:document.getElementById('f-estado').value, documentos:[],
+  });
+  toast('Pago registrado ✓','ok'); closeModal(); await loadAll();
+}
+
+// Membresías
+function actualizarClasesPlan() {
+  const sel=document.getElementById('f-mplan'); if(!sel) return;
+  const opt=sel.options[sel.selectedIndex];
+  const clases=opt?.dataset.clases||0; const dias=parseInt(opt?.dataset.dias)||30;
+  const inicio=document.getElementById('f-minicio')?.value;
+  if(inicio){ const fin=addDays(new Date(inicio),dias); document.getElementById('f-mfin').value=fin.toISOString().slice(0,10); }
+  if(document.getElementById('f-mclases')) document.getElementById('f-mclases').value=clases;
+}
+async function saveMembresia(clienteId) {
+  setBtnLoading('save-btn',true);
+  const cId = clienteId || parseInt(document.getElementById('f-mclient')?.value);
+  const planId=parseInt(document.getElementById('f-mplan').value);
+  const {error}=await db.from('membresias').insert({
+    cliente_id:cId, plan_id:planId,
+    clases_totales:parseInt(document.getElementById('f-mclases').value)||0,
+    clases_usadas:0,
+    fecha_inicio:document.getElementById('f-minicio').value,
+    fecha_fin:document.getElementById('f-mfin').value, estado:'activa',
+  });
+  if(error){toast('Error al asignar','error');setBtnLoading('save-btn',false);return;}
+  toast('Membresía asignada ✓','ok'); closeModal(); await loadAll();
+}
+async function saveNuevoPlan() {
+  setBtnLoading('save-btn',true);
+  const {error}=await db.from('planes').insert({
+    nombre:document.getElementById('f-pnombre2').value,
+    clases_por_periodo:parseInt(document.getElementById('f-pclases').value)||8,
+    periodo_dias:parseInt(document.getElementById('f-pdias').value)||30,
+    precio:parseFloat(document.getElementById('f-pprecio2').value)||0,
+  });
+  if(error){toast('Error','error');setBtnLoading('save-btn',false);return;}
+  toast('Plan creado ✓','ok'); closeModal(); await loadAll();
+}
+
+// Clases
+async function saveNuevoTipoClase() {
+  setBtnLoading('save-btn',true);
+  await db.from('tipos_clase').insert({nombre:document.getElementById('f-tcnombre').value, duracion_minutos:parseInt(document.getElementById('f-tcdur').value)||60});
+  toast('Tipo creado ✓','ok'); closeModal(); await loadAll();
+}
+async function saveNuevoEntrenador() {
+  setBtnLoading('save-btn',true);
+  await db.from('entrenadores').insert({nombre:document.getElementById('f-enombre').value, especialidad:document.getElementById('f-eesp').value});
+  toast('Entrenador creado ✓','ok'); closeModal(); await loadAll();
+}
+async function saveNuevaClase() {
+  setBtnLoading('save-btn',true);
+  const {error}=await db.from('clases').insert({
+    tipo_clase_id:parseInt(document.getElementById('f-ctipo').value),
+    entrenador_id:parseInt(document.getElementById('f-centrenador').value),
+    fecha:document.getElementById('f-cfecha').value,
+    hora_inicio:document.getElementById('f-cinicio').value,
+    hora_fin:document.getElementById('f-cfin').value,
+    capacidad_maxima:parseInt(document.getElementById('f-ccap').value)||8,
+    notas:document.getElementById('f-cnotas').value, estado:'activa',
+  });
+  if(error){toast('Error al crear clase','error');setBtnLoading('save-btn',false);return;}
+  toast('Clase creada ✓','ok'); closeModal(); await loadAll();
+}
+async function saveEditarClase(id) {
+  setBtnLoading('save-btn',true);
+  await db.from('clases').update({
+    tipo_clase_id:parseInt(document.getElementById('f-ctipo').value),
+    entrenador_id:parseInt(document.getElementById('f-centrenador').value),
+    fecha:document.getElementById('f-cfecha').value,
+    hora_inicio:document.getElementById('f-cinicio').value,
+    hora_fin:document.getElementById('f-cfin').value,
+    capacidad_maxima:parseInt(document.getElementById('f-ccap').value)||8,
+  }).eq('id',id);
+  toast('Clase actualizada ✓','ok'); closeModal(); await loadAll();
+}
+async function cancelarClase(id) {
+  if(!confirm('¿Cancelar esta clase? Se notificará a los reservados.')) return;
+  await db.from('clases').update({estado:'cancelada'}).eq('id',id);
+  await db.from('reservas').update({estado:'cancelada'}).eq('clase_id',id).eq('estado','reservada');
+  toast('Clase cancelada','ok'); await loadAll();
+}
+function verAsistentesClase(id) { showModal('ver-asistentes', id); }
+function verAsistentesClaseEntrenador(id) { showModal('ver-asistentes', id); }
+
+// Reservas
+async function hacerReserva(claseId) {
+  if(!state.clienteId){toast('Sin perfil de cliente','error');return;}
+  const memb=state.membresias[0];
+  if(!memb){toast('No tienes membresía activa','error');return;}
+  const restantes=(memb.clases_totales||0)-(memb.clases_usadas||0);
+  if(restantes<=0){toast('No te quedan clases en tu membresía','error');return;}
+  // Verificar plazas
+  const {data:reservasActuales}=await db.from('reservas').select('id').eq('clase_id',claseId).neq('estado','cancelada');
+  const clase=state.clases.find(x=>x.id===claseId);
+  if(reservasActuales.length>=clase.capacidad_maxima){toast('La clase está llena','error');return;}
+  // Crear reserva
+  const {error}=await db.from('reservas').insert({cliente_id:state.clienteId, clase_id:claseId, estado:'reservada'});
+  if(error){
+    if(error.code==='23505') toast('Ya tienes esta clase reservada','error');
+    else toast('Error al reservar','error');
+    return;
+  }
+  // Descontar clase de membresía
+  await db.from('membresias').update({clases_usadas:(memb.clases_usadas||0)+1}).eq('id',memb.id);
+  toast('¡Reserva confirmada! ✓','ok');
+  await loadAll();
+}
+
+async function cancelarMiReserva(reservaId, recuperarClase) {
+  const msg = recuperarClase ? '¿Cancelar reserva? Recuperarás la clase.' : '¿Cancelar reserva? No recuperarás la clase (menos de 12 horas).';
+  if(!confirm(msg)) return;
+  await db.from('reservas').update({estado:'cancelada'}).eq('id',reservaId);
+  if(recuperarClase) {
+    const memb=state.membresias[0];
+    if(memb&&memb.clases_usadas>0) await db.from('membresias').update({clases_usadas:memb.clases_usadas-1}).eq('id',memb.id);
+  }
+  toast(recuperarClase?'Reserva cancelada — clase recuperada ✓':'Reserva cancelada','ok');
+  await loadAll();
+}
+
+async function cambiarEstadoReserva(id, nuevoEstado) {
+  await db.from('reservas').update({estado:nuevoEstado}).eq('id',id);
+  toast('Estado actualizado ✓','ok');
+  closeModal();
+  await loadAll();
+}
+
+// Asistencia libre
+function selClienteAsistencia(clientId) {
+  state.clienteAsistencia=state.clienteAsistencia===clientId?null:clientId;
+  state.calMes={y:today.getFullYear(),m:today.getMonth()};
+  render();
+}
+async function marcarAsistencia(clientId) {
+  const yaExiste=state.asistencia.find(a=>a.cliente_id===clientId&&a.fecha===todayStr);
+  if(yaExiste){toast('Ya marcado hoy');return;}
+  await db.from('asistencia').insert({cliente_id:clientId,fecha:todayStr});
+  toast('Asistencia marcada ✓','ok'); await loadAll();
+}
+async function marcarAsistenciaFecha(clientId, fecha) {
+  const yaExiste=state.asistencia.find(a=>a.cliente_id===clientId&&a.fecha===fecha);
+  if(yaExiste) return;
+  await db.from('asistencia').insert({cliente_id:clientId,fecha});
+  await loadAll();
+}
+async function quitarAsistencia(asistId) {
+  await db.from('asistencia').delete().eq('id',asistId);
+  toast('Eliminado'); await loadAll();
+}
+function calCambiarMes(clientId, dir) {
+  if(!state.calMes) state.calMes={y:today.getFullYear(),m:today.getMonth()};
+  let {y,m}=state.calMes; m+=dir;
+  if(m>11){m=0;y++;} if(m<0){m=11;y--;}
+  if(y>today.getFullYear()||(y===today.getFullYear()&&m>today.getMonth())) return;
+  state.calMes={y,m};
+  const el=document.getElementById('asist-content');
+  if(el) el.innerHTML=renderAsistenciaCliente(clientId);
+}
+
+// Inventario
+function actualizarPrecioVenta() {
+  const sel=document.getElementById('f-vprod'); if(!sel||!sel.value) return;
+  const opt=sel.options[sel.selectedIndex];
+  const precio=parseFloat(opt.dataset.precio)||0;
+  const cant=parseInt(document.getElementById('f-vcantidad')?.value)||1;
+  const precioInput=document.getElementById('f-vprecio');
+  if(precioInput&&!precioInput._edited) precioInput.value=precio.toFixed(2);
+  const total=(parseFloat(precioInput?.value)||precio)*cant;
+  const el=document.getElementById('venta-total');
+  if(el) el.innerHTML=`Total: <strong style="color:var(--text);font-size:16px">$${total.toFixed(2)}</strong>`;
+}
+async function saveNuevoProducto() {
+  const nombre=document.getElementById('f-pnombre').value.trim();
+  if(!nombre){toast('Nombre obligatorio','error');return;}
+  setBtnLoading('save-btn',true);
+  await db.from('productos').insert({nombre,categoria:document.getElementById('f-pcat').value,costo:parseFloat(document.getElementById('f-pcosto').value)||0,precio_venta:parseFloat(document.getElementById('f-pprecio').value)||0,stock:parseInt(document.getElementById('f-pstock').value)||0,stock_minimo:parseInt(document.getElementById('f-pmin').value)||5});
+  toast('Producto creado ✓','ok'); closeModal(); await loadAll();
+}
+async function saveEditarProducto(id) {
+  setBtnLoading('save-btn',true);
+  await db.from('productos').update({nombre:document.getElementById('f-pnombre').value,categoria:document.getElementById('f-pcat').value,costo:parseFloat(document.getElementById('f-pcosto').value)||0,precio_venta:parseFloat(document.getElementById('f-pprecio').value)||0,stock:parseInt(document.getElementById('f-pstock').value)||0,stock_minimo:parseInt(document.getElementById('f-pmin').value)||5}).eq('id',id);
+  toast('Actualizado ✓','ok'); closeModal(); await loadAll();
+}
+async function eliminarProducto(id) {
+  if(!confirm('¿Eliminar?')) return;
+  await db.from('productos').delete().eq('id',id);
+  toast('Eliminado'); closeModal(); await loadAll();
+}
+async function reponerStock(id, stockActual) {
+  const cantidad=parseInt(document.getElementById('f-reponer').value)||0;
+  if(cantidad<=0){toast('Cantidad inválida','error');return;}
+  setBtnLoading('save-btn',true);
+  await db.from('productos').update({stock:stockActual+cantidad}).eq('id',id);
+  toast(`+${cantidad} unidades ✓`,'ok'); closeModal(); await loadAll();
+}
+async function registrarVentaRapida(productoId) {
+  const p=state.productos.find(x=>x.id===productoId);
+  const cantidad=parseInt(document.getElementById('f-vcantidad').value)||1;
+  if(cantidad>p.stock){toast('Stock insuficiente','error');return;}
+  setBtnLoading('save-btn',true);
+  const total=cantidad*p.precio_venta;
+  await db.from('ventas').insert({producto_id:productoId,cantidad,precio_venta:p.precio_venta,costo:p.costo,total});
+  await db.from('productos').update({stock:p.stock-cantidad}).eq('id',productoId);
+  toast(`Venta $${total.toFixed(2)} ✓`,'ok'); closeModal(); await loadAll();
+}
+async function registrarVenta() {
+  const prodId=parseInt(document.getElementById('f-vprod').value); if(!prodId){toast('Selecciona producto','error');return;}
+  const p=state.productos.find(x=>x.id===prodId);
+  const cantidad=parseInt(document.getElementById('f-vcantidad').value)||1;
+  const precio=parseFloat(document.getElementById('f-vprecio').value)||p.precio_venta;
+  if(cantidad>p.stock){toast('Stock insuficiente','error');return;}
+  setBtnLoading('save-btn',true);
+  const total=cantidad*precio;
+  await db.from('ventas').insert({producto_id:prodId,cantidad,precio_venta:precio,costo:p.costo,total});
+  await db.from('productos').update({stock:p.stock-cantidad}).eq('id',prodId);
+  toast(`Venta $${total.toFixed(2)} ✓`,'ok'); closeModal(); await loadAll();
+}
+
+function setBtnLoading(id, loading) {
+  const btn=document.getElementById(id);
+  if(btn){btn.disabled=loading;btn.textContent=loading?'Guardando...':'Guardar';}
+}
+
+// ── Arranque ──
+(async()=>{
+  document.querySelector('.app').style.display='none';
+  const {data:{session}}=await db.auth.getSession();
+  if(session){ await setupUser(session.user); showApp(); }
+  else{ document.getElementById('login-screen').style.display='flex'; }
+})();
+</script>
+</body>
+</html>
