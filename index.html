@@ -206,6 +206,36 @@
         onkeydown="if(event.key==='Enter')doLogin()" />
     </div>
     <button class="btn primary" style="width:100%;justify-content:center;margin-top:4px" id="login-btn" onclick="doLogin()">Entrar</button>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:8px" onclick="showRegister()"><i class="ti ti-user-plus" aria-hidden="true"></i> Crear usuario</button>
+    <div class="login-footer">Studio 8:7 · Solo para uso autorizado</div>
+  </div>
+</div>
+
+<div class="login-screen" id="register-screen" style="display:none">
+  <div class="login-box">
+    <div class="login-logo">STUDIO <span style="color:#E8001C">8:7</span></div>
+    <div class="login-sub" style="letter-spacing:2px;font-size:11px;text-transform:uppercase">GYM TRAINING</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:20px;letter-spacing:1px;text-transform:uppercase;font-size:11px">Crear nuevo usuario</div>
+    <div class="login-error" id="register-error"></div>
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input class="form-input" id="reg-name" type="text" placeholder="Nombre completo" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="reg-email" type="email" placeholder="tu@email.com" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <input class="form-input" id="reg-pass" type="password" placeholder="••••••••" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Confirmar contraseña</label>
+      <input class="form-input" id="reg-pass2" type="password" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')doRegister()" />
+    </div>
+    <button class="btn primary" style="width:100%;justify-content:center;margin-top:4px" id="register-btn" onclick="doRegister()">Crear usuario</button>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:8px" onclick="showLogin()"><i class="ti ti-arrow-left" aria-hidden="true"></i> Volver a iniciar sesión</button>
     <div class="login-footer">Studio 8:7 · Solo para uso autorizado</div>
   </div>
 </div>
@@ -265,7 +295,7 @@ const fileIcon = name => {
 document.getElementById('topbar-date').textContent = today.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 
 let state = {
-  view: 'dashboard', clientTab: 'info',
+  view: 'dashboard', clientTab: 'info', rol:'entrenador',
   selectedClient: null, searchClients: '', searchPayments: '',
   showModal: null, clients: [], pagos: [], asistencia: [], searchAsistencia: '', clienteAsistencia: null,
   productos: [], ventas: [], searchProductos: '',
@@ -280,7 +310,7 @@ function toast(msg, type='ok') {
   setTimeout(()=>el.remove(), 3000);
 }
 
-// ── Carga datos ──
+// ── renderizado ──
 async function loadAll() {
   const [{data:clients,error:e1},{data:pagos,error:e2},{data:asistencia,error:e3},{data:productos,error:e4},{data:ventas,error:e5}] = await Promise.all([
     db.from('clientes').select('*').order('created_at',{ascending:false}),
@@ -297,6 +327,13 @@ async function loadAll() {
   state.ventas = ventas||[];
   render();
 }
+
+async function createUser(data) {
+  const {error} = await db.from('clientes').insert([data]);
+  if(error) throw error;
+  toast('Cliente creado');
+  await loadAll();
+} 
 
 // ── Upload doc a Storage ──
 async function uploadDoc(file, folder) {
@@ -346,14 +383,76 @@ async function doLogin() {
   const errEl = document.getElementById('login-error');
   errEl.style.display='none';
   btn.disabled=true; btn.textContent='Entrando...';
-  const {error} = await db.auth.signInWithPassword({email, password:pass});
+
+  const {data, error} = await db.auth.signInWithPassword({email, password:pass});
   if(error){
     errEl.textContent='Email o contraseña incorrectos';
     errEl.style.display='block';
     btn.disabled=false; btn.textContent='Entrar';
     return;
   }
+
+  await cargarPerfil(data.user.id);
   showApp();
+}
+
+async function cargarPerfil(uid) {
+  const {data: perfil} = await db.from('usuarios')
+    .select('rol, cliente_id, entrenador_id')
+    .eq('id', uid)
+    .maybeSingle();
+
+  state.rol = perfil?.rol || 'cliente';
+  state.selectedClient = perfil?.cliente_id || null;
+  state.selectedEntrenador = perfil?.entrenador_id || null;
+  state.view = state.rol === 'admin' ? 'dashboard'
+             : state.rol === 'entrenador' ? 'Mis_clases'
+             : 'mis-pagos';
+}
+
+function showRegister() {
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('register-screen').style.display='flex';
+  document.getElementById('register-error').style.display='none';
+}
+
+function showLogin() {
+  document.getElementById('register-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-error').style.display='none';
+}
+
+function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+  const errEl = document.getElementById('register-error');
+  errEl.style.display='none';
+  if(!name){errEl.textContent='El nombre es obligatorio';errEl.style.display='block';return;}
+  if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){errEl.textContent='Ingresa un email válido';errEl.style.display='block';return;}
+  if(pass.length<6){errEl.textContent='La contraseña debe tener al menos 6 caracteres';errEl.style.display='block';return;}
+  if(pass!==pass2){errEl.textContent='Las contraseñas no coinciden';errEl.style.display='block';return;}
+  const btn=document.getElementById('register-btn');
+  btn.disabled=true; btn.textContent='Creando cuenta...';
+  db.auth.signUp({email, password:pass})
+    .then(async ({data, error})=>{
+      if(error){
+        errEl.textContent='Error al crear usuario: '+error.message;
+        errEl.style.display='block';
+        btn.disabled=false; btn.textContent='Crear usuario';
+        return;
+      }
+      await db.from('clientes').insert([{nombre:name,email}]);
+      toast('Usuario creado. Revisa tu email para confirmar.');
+      btn.disabled=false; btn.textContent='Crear usuario';
+      showLogin();
+    })
+    .catch(e=>{
+      errEl.textContent='Error al crear usuario';
+      errEl.style.display='block';
+      btn.disabled=false; btn.textContent='Crear usuario';
+    });
 }
 
 async function doLogout() {
@@ -378,6 +477,19 @@ const NAV = [
   {id:'inventario', icon:'ti-package',       label:'Inventario'},
 ];
 
+const NAV_CLIENTE = [
+  {id:'mis-pagos',        icon:'ti-credit-card',      label:'Mis pagos'},
+  {id:'mis-asistencias',  icon:'ti-calendar-check',   label:'Mis asistencias'},
+  {id:'calendario',       icon:'ti-calendar',         label:'Calendario'},
+  {id:'eventos',          icon:'ti-star',             label:'Eventos'},
+];
+
+const NAV_ENTRENADOR = [
+  {id:'Mis_clases',icon:'ti-calendar-check',label:'Mis clases'},
+  {id:'inventario', icon:'ti-package',       label:'Inventario'},
+];
+
+
 function getAlerts() {
   const alerts = [];
   state.clients.forEach(c => {
@@ -395,21 +507,55 @@ function getAlerts() {
   return alerts;
 }
 
+const NAV_ADMIN = [
+  {id:'dashboard', icon:'ti-dashboard', label:'Dashboard'},
+  {id:'clients',   icon:'ti-users',     label:'Clientes'},
+  {id:'payments',  icon:'ti-credit-card',label:'Pagos'},
+  {id:'alerts',    icon:'ti-bell',      label:'Recordatorios'},
+  {id:'asistencia',icon:'ti-calendar-check',label:'Asistencia'},
+  {id:'inventario', icon:'ti-package',       label:'Inventario'},
+];
+
+
+
 function renderNav() {
   const alerts = getAlerts();
-  document.getElementById('nav').innerHTML = NAV.map(n=>`
+  document.getElementById('nav').innerHTML = state.rol==='admin' ? NAV_ADMIN.map(n=>`
     <button class="nav-item ${state.view===n.id||(state.view==='client-detail'&&n.id==='clients')?'active':''}" onclick="navigate('${n.id}')">
+      <i class="ti ${n.icon}" aria-hidden="true"></i>${n.label}
+      ${n.id==='alerts'&&alerts.length?`<span class="alerts-badge">${alerts.length}</span>`:''}
+    </button>`).join('') : state.rol==='entrenador' ? NAV_ENTRENADOR.map(n=>`
+    <button class="nav-item ${state.view===n.id||(state.view==='client-detail'&&n.id==='clients')?'active':''}" onclick="navigate_cliente('${n.id}')">
+      <i class="ti ${n.icon}" aria-hidden="true"></i>${n.label}
+      ${n.id==='alerts'&&alerts.length?`<span class="alerts-badge">${alerts.length}</span>`:''}
+    </button>`).join('') : NAV_CLIENTE.map(n=>`
+    <button class="nav-item ${state.view===n.id||(state.view==='client-detail'&&n.id==='clients')?'active':''}" onclick="navigate_cliente('${n.id}')">
+      <i class="ti ${n.icon}" aria-hidden="true"></i>${n.label}
+      ${n.id==='alerts'&&alerts.length?`<span class="alerts-badge">${alerts.length}</span>`:''}
+    </button>`).join('');
+}
+async function navigate(v) {
+  state.view=v; state.selectedClient=null;
+  document.getElementById('page-title').textContent=NAV_ADMIN.find(n=>n.id===v)?.label||'';
+  await loadAll();
+}
+
+function renderNav_cliente() {
+  const alerts = getAlerts();
+  document.getElementById('nav').innerHTML = NAV_CLIENTE.map(n=>`
+    <button class="nav-item ${state.view===n.id||(state.view==='client-detail'&&n.id==='clients')?'active':''}" onclick="navigate_cliente('${n.id}')">
       <i class="ti ${n.icon}" aria-hidden="true"></i>${n.label}
       ${n.id==='alerts'&&alerts.length?`<span class="alerts-badge">${alerts.length}</span>`:''}
     </button>`).join('');
 }
 
-async function navigate(v) {
+async function navigate_cliente(v) {
   state.view=v; state.selectedClient=null;
-  document.getElementById('page-title').textContent=NAV.find(n=>n.id===v)?.label||'';
+  document.getElementById('page-title').textContent=NAV_CLIENTE.find(n=>n.id===v)?.label||'';
   await loadAll();
 }
 
+//--render de admin//
 function render() {
   renderNav();
   const el = document.getElementById('content');
@@ -420,6 +566,96 @@ function render() {
   else if(state.view==='alerts')   el.innerHTML=renderAlerts();
   else if(state.view==='asistencia') el.innerHTML=renderAsistencia();
   else if(state.view==='inventario') el.innerHTML=renderInventario();
+}
+
+
+//--render de clientes//
+function renderportalClients() {
+  renderNav_cliente();
+  const el = document.getElementById('content');
+  if(state.view==='eventos')  el.innerHTML=rendereventos();
+  if(state.view==='mis-pagos') el.innerHTML=renderMisPagos();
+  if(state.view==='mis-asistencias') el.innerHTML=renderMisAsistencias();
+  if(state.view==='calendario') el.innerHTML=renderCalendario();
+}
+
+function rendereventos() {
+  return `
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-search">
+          <i class="ti ti-search" style="font-size:14px;color:var(--text3)" aria-hidden="true"></i>
+          <input type="text" placeholder="Buscar evento..." value="${state.searchEvents}" oninput="state.searchEvents=this.value;renderportalClients()" />
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Evento</th></tr></thead>
+        <tbody>${state.events.filter(e=>e.cliente_id===state.selectedClient&&e.nombre.includes(state.searchEvents)).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(e=>{
+          return `<tr><td>${fmt(e.fecha)}</td><td>${e.nombre}</td></tr>`;
+        }).join('')||'<tr><td colspan="2" class="empty">Sin eventos registrados</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderMisPagos() {
+  const filtered = state.pagos.filter(p=>p.cliente_id===state.selectedClient);
+  return `
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-search">
+          <i class="ti ti-search" style="font-size:14px;color:var(--text3)" aria-hidden="true"></i>
+          <input type="text" placeholder="Buscar pago..." value="${state.searchPayments}" oninput="state.searchPayments=this.value;render()" />
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Importe</th><th>Estado</th></tr></thead>
+        <tbody>${filtered.filter(p=>p.fecha.includes(state.searchPayments)).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(p=>{
+          return `<tr><td>${fmt(p.fecha)}</td><td>€${Number(p.monto).toFixed(2)}</td><td>${p.estado}</td></tr>`;
+        }).join('')||'<tr><td colspan="3" class="empty">Sin pagos registrados</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderMisAsistencias() {
+  const filtered = state.asistencia.filter(a=>a.cliente_id===state.selectedClient);
+  return `
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-search">
+          <i class="ti ti-search" style="font-size:14px;color:var(--text3)" aria-hidden="true"></i>
+          <input type="text" placeholder="Buscar asistencia..." value="${state.searchAsistencia}" oninput="state.searchAsistencia=this.value;render()" />
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Hora</th></tr></thead>
+        <tbody>${filtered.filter(a=>a.fecha.includes(state.searchAsistencia)).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(a=>{
+          return `<tr><td>${fmt(a.fecha)}</td><td>${a.hora}</td></tr>`;
+        }).join('')||'<tr><td colspan="2" class="empty">Sin asistencias registradas</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderCalendario() {
+  const asistencias = state.asistencia.filter(a=>a.cliente_id===state.selectedClient).map(a=>a.fecha);
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  let html = `<div class="cal-wrap"><div class="cal-header"><div class="cal-month">${today.toLocaleDateString('es-ES',{month:'long',year:'numeric'})}</div></div><div class="cal-grid">`;
+  for(let i=0;i<firstDay.getDay();i++) html += `<div class="cal-day empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isPresent = asistencias.includes(dateStr);
+    const isToday = dateStr === today.toISOString().slice(0,10);
+    html += `<div class="cal-day ${isPresent?'present':''} ${isToday?'today':''}">${d}</div>`;
+  }
+  html += `</div><div class="cal-legend"><div><span class="cal-legend-dot" style="background:var(--accent)"></span> Asistencia</div></div></div>`;
+  return html;
+}
+
+function misAsistencias() {
+  state.view='mis-asistencias';
+  document.getElementById('page-title').textContent='Mis asistencias';
+  render();
 }
 
 // ── Dashboard ──
@@ -455,7 +691,13 @@ function renderDashboard() {
     </table></div>`;
 }
 
-// ── Clientes ──
+//-pantalla entrenador mis clases---//
+function misclasesentrenador(){
+  state.view='Mis_clases';
+  document.getElementById('page-title').textContent='Mis clases';
+  render();
+}
+// ── Clientes pantalla ──
 function renderClients() {
   const filtered = state.clients.filter(c=>
     c.nombre.toLowerCase().includes(state.searchClients.toLowerCase())||
@@ -484,7 +726,7 @@ function renderClients() {
     </div>`;
 }
 
-// ── Detalle cliente ──
+// ── Detalle cliente  pantalla──
 function renderClientDetail() {
   const c = state.clients.find(x=>x.id===state.selectedClient);
   if(!c) return '<div class="empty">Cliente no encontrado</div>';
@@ -591,7 +833,8 @@ function renderClientDetail() {
     </div>`;
 }
 
-// ── Asistencia global ──
+
+// ── Asistencia global pantalla ──
 function renderAsistencia() {
   const hoy = today.toISOString().slice(0,10);
   const asistHoy = state.asistencia.filter(a=>a.fecha===hoy);
@@ -741,7 +984,7 @@ function renderAsistenciaCliente(clientId) {
   `;
 }
 
-// ── Pagos globales ──
+// ── Pagos globales pantalla ──
 function renderPayments() {
   const mes = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
   const pendientes = state.pagos.filter(p=>p.estado==='Pendiente');
@@ -779,7 +1022,7 @@ function renderPayments() {
     </div>`;
 }
 
-// ── Inventario ──
+// ── Inventario pantalla ──
 function renderInventario() {
   const mes = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
   const ventasMes = state.ventas.filter(v=>v.created_at&&v.created_at.startsWith(mes));
@@ -862,7 +1105,7 @@ function renderInventario() {
   `;
 }
 
-// ── Alertas ──
+// ── Alertas pantalla ──
 function renderAlerts() {
   const alerts = getAlerts();
   return `
