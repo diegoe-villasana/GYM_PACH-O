@@ -214,6 +214,36 @@ tbody tr:hover td { background: var(--surface2); cursor: pointer; }
       <input class="form-input" id="login-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
     </div>
     <button class="btn primary" style="width:100%;justify-content:center;margin-top:4px" id="login-btn" onclick="doLogin()">Entrar</button>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:8px" onclick="showRegister()"><i class="ti ti-user-plus" aria-hidden="true"></i> Crear usuario</button>
+    <div class="login-footer">Studio 8:7 · Solo para uso autorizado</div>
+  </div>
+</div>
+
+<div class="login-screen" id="register-screen" style="display:none">
+  <div class="login-box">
+    <div class="login-logo">STUDIO <span style="color:#E8001C">8:7</span></div>
+    <div class="login-sub" style="letter-spacing:2px;font-size:11px;text-transform:uppercase">GYM TRAINING</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:20px;letter-spacing:1px;text-transform:uppercase;font-size:11px">Crear nuevo usuario</div>
+    <div class="login-error" id="register-error"></div>
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input class="form-input" id="reg-name" type="text" placeholder="Nombre completo" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" id="reg-email" type="email" placeholder="tu@email.com" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <input class="form-input" id="reg-pass" type="password" placeholder="••••••••" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Confirmar contraseña</label>
+      <input class="form-input" id="reg-pass2" type="password" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')doRegister()" />
+    </div>
+    <button class="btn primary" style="width:100%;justify-content:center;margin-top:4px" id="register-btn" onclick="doRegister()">Crear usuario</button>
+    <button class="btn" style="width:100%;justify-content:center;margin-top:8px" onclick="showLogin()"><i class="ti ti-arrow-left" aria-hidden="true"></i> Volver a iniciar sesión</button>
     <div class="login-footer">Studio 8:7 · Solo para uso autorizado</div>
   </div>
 </div>
@@ -276,6 +306,10 @@ let state = {
   clases: [], reservas: [], tiposClase: [], entrenadores: [], planes: [], membresias: [],
   // filtros clases
   clasesFecha: todayStr,
+  view: 'dashboard', clientTab: 'info', rol:'entrenador',
+  selectedClient: null, searchClients: '', searchPayments: '',
+  showModal: null, clients: [], pagos: [], asistencia: [], searchAsistencia: '', clienteAsistencia: null,
+  productos: [], ventas: [], searchProductos: '',
 };
 
 // ── Toast ──
@@ -298,6 +332,7 @@ function toggleSide() {
 }
 
 // ── Carga datos según rol ──
+// ── renderizado ──
 async function loadAll() {
   if(state.rol === 'admin') await loadAdmin();
   else if(state.rol === 'entrenador') await loadEntrenador();
@@ -341,6 +376,41 @@ async function loadEntrenador() {
   state.clases = clases||[];
   state.reservas = reservas||[];
   state.entrenadores = entrenadores||[];
+async function createUser(data) {
+  const {error} = await db.from('clientes').insert([data]);
+  if(error) throw error;
+  toast('Cliente creado');
+  await loadAll();
+} 
+
+// ── Upload doc a Storage ──
+async function uploadDoc(file, folder) {
+  const ext = file.name.split('.').pop();
+  const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const {error} = await db.storage.from('documentos').upload(path, file);
+  if(error) throw error;
+  return { name: file.name, path, size: file.size, fecha: new Date().toISOString() };
+}
+
+async function getDocUrl(path) {
+  const {data} = await db.storage.from('documentos').createSignedUrl(path, 60);
+  return data?.signedUrl;
+}
+
+async function openDoc(path) {
+  const url = await getDocUrl(path);
+  if(url) window.open(url, '_blank');
+  else toast('No se pudo abrir el documento','error');
+}
+
+async function deleteDoc(clientId, path) {
+  if(!confirm('¿Eliminar este documento?')) return;
+  await db.storage.from('documentos').remove([path]);
+  const c = state.clients.find(x=>x.id===clientId);
+  const docs = (c.documentos||[]).filter(d=>d.path!==path);
+  await db.from('clientes').update({documentos:docs}).eq('id',clientId);
+  toast('Documento eliminado');
+  await loadAll();
 }
 
 async function loadCliente() {
@@ -384,6 +454,76 @@ async function setupUser(user) {
     state.entrenadorId = data.entrenador_id;
   }
   document.getElementById('role-badge').textContent = state.rol;
+
+  const {data, error} = await db.auth.signInWithPassword({email, password:pass});
+  if(error){
+    errEl.textContent='Email o contraseña incorrectos';
+    errEl.style.display='block';
+    btn.disabled=false; btn.textContent='Entrar';
+    return;
+  }
+
+  await cargarPerfil(data.user.id);
+  showApp();
+}
+
+async function cargarPerfil(uid) {
+  const {data: perfil} = await db.from('usuarios')
+    .select('rol, cliente_id, entrenador_id')
+    .eq('id', uid)
+    .maybeSingle();
+
+  state.rol = perfil?.rol || 'cliente';
+  state.selectedClient = perfil?.cliente_id || null;
+  state.selectedEntrenador = perfil?.entrenador_id || null;
+  state.view = state.rol === 'admin' ? 'dashboard'
+             : state.rol === 'entrenador' ? 'Mis_clases'
+             : 'mis-pagos';
+}
+
+function showRegister() {
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('register-screen').style.display='flex';
+  document.getElementById('register-error').style.display='none';
+}
+
+function showLogin() {
+  document.getElementById('register-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-error').style.display='none';
+}
+
+function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+  const errEl = document.getElementById('register-error');
+  errEl.style.display='none';
+  if(!name){errEl.textContent='El nombre es obligatorio';errEl.style.display='block';return;}
+  if(!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){errEl.textContent='Ingresa un email válido';errEl.style.display='block';return;}
+  if(pass.length<6){errEl.textContent='La contraseña debe tener al menos 6 caracteres';errEl.style.display='block';return;}
+  if(pass!==pass2){errEl.textContent='Las contraseñas no coinciden';errEl.style.display='block';return;}
+  const btn=document.getElementById('register-btn');
+  btn.disabled=true; btn.textContent='Creando cuenta...';
+  db.auth.signUp({email, password:pass})
+    .then(async ({data, error})=>{
+      if(error){
+        errEl.textContent='Error al crear usuario: '+error.message;
+        errEl.style.display='block';
+        btn.disabled=false; btn.textContent='Crear usuario';
+        return;
+      }
+      await db.from('clientes').insert([{nombre:name,email}]);
+      toast('Usuario creado. Revisa tu email para confirmar.');
+      btn.disabled=false; btn.textContent='Crear usuario';
+      showLogin();
+    })
+    .catch(e=>{
+      errEl.textContent='Error al crear usuario';
+      errEl.style.display='block';
+      btn.disabled=false; btn.textContent='Crear usuario';
+    });
 }
 
 async function doLogout() {
@@ -434,7 +574,46 @@ function getNavItems() {
   if(state.rol==='admin') return NAV_ADMIN;
   if(state.rol==='entrenador') return NAV_ENTRENADOR;
   return NAV_CLIENTE;
+const NAV_CLIENTE = [
+  {id:'mis-pagos',        icon:'ti-credit-card',      label:'Mis pagos'},
+  {id:'mis-asistencias',  icon:'ti-calendar-check',   label:'Mis asistencias'},
+  {id:'calendario',       icon:'ti-calendar',         label:'Calendario'},
+  {id:'eventos',          icon:'ti-star',             label:'Eventos'},
+];
+
+const NAV_ENTRENADOR = [
+  {id:'Mis_clases',icon:'ti-calendar-check',label:'Mis clases'},
+  {id:'inventario', icon:'ti-package',       label:'Inventario'},
+];
+
+
+function getAlerts() {
+  const alerts = [];
+  state.clients.forEach(c => {
+    if(c.estado!=='Activo') return;
+    const days = diffDays(today, new Date(c.cobro));
+    if(days===1)           alerts.push({type:'red',   msg:`⚠️ ${c.nombre} vence mañana`, id:c.id});
+    else if(days<=3&&days>=0) alerts.push({type:'amber', msg:`📅 ${c.nombre} vence en ${days} días`, id:c.id});
+    else if(days<0)        alerts.push({type:'red',   msg:`🔴 ${c.nombre} ha vencido hace ${Math.abs(days)} días`, id:c.id});
+    const pend = state.pagos.find(p=>p.cliente_id===c.id&&p.estado==='Pendiente');
+    if(pend) alerts.push({type:'amber', msg:`💳 ${c.nombre} no ha pagado (${fmt(pend.fecha)})`, id:c.id});
+    const meses = Math.floor(diffDays(new Date(c.inicio),today)/30);
+    if([3,6,12].includes(meses) && diffDays(new Date(c.inicio),today)%30<3)
+      alerts.push({type:'blue', msg:`🎉 ${c.nombre} cumple ${meses} meses entrenando`, id:c.id});
+  });
+  return alerts;
 }
+
+const NAV_ADMIN = [
+  {id:'dashboard', icon:'ti-dashboard', label:'Dashboard'},
+  {id:'clients',   icon:'ti-users',     label:'Clientes'},
+  {id:'payments',  icon:'ti-credit-card',label:'Pagos'},
+  {id:'alerts',    icon:'ti-bell',      label:'Recordatorios'},
+  {id:'asistencia',icon:'ti-calendar-check',label:'Asistencia'},
+  {id:'inventario', icon:'ti-package',       label:'Inventario'},
+];
+
+
 
 function renderNav() {
   const items = getNavItems();
@@ -447,8 +626,21 @@ function renderNav() {
       ${n.id==='alerts'&&alerts.length?`<span class="alerts-badge">${alerts.length}</span>`:''}
     </button>`;
   }).join('');
+  const alerts = getAlerts();
+  document.getElementById('nav').innerHTML = state.rol==='admin' ? NAV_ADMIN.map(n=>`
+    <button class="nav-item ${state.view===n.id||(state.view==='client-detail'&&n.id==='clients')?'active':''}" onclick="navigate('${n.id}')">
+      <i class="ti ${n.icon}" aria-hidden="true"></i>${n.label}
+      ${n.id==='alerts'&&alerts.length?`<span class="alerts-badge">${alerts.length}</span>`:''}
+    </button>`).join('') : state.rol==='entrenador' ? NAV_ENTRENADOR.map(n=>`
+    <button class="nav-item ${state.view===n.id||(state.view==='client-detail'&&n.id==='clients')?'active':''}" onclick="navigate_cliente('${n.id}')">
+      <i class="ti ${n.icon}" aria-hidden="true"></i>${n.label}
+      ${n.id==='alerts'&&alerts.length?`<span class="alerts-badge">${alerts.length}</span>`:''}
+    </button>`).join('') : NAV_CLIENTE.map(n=>`
+    <button class="nav-item ${state.view===n.id||(state.view==='client-detail'&&n.id==='clients')?'active':''}" onclick="navigate_cliente('${n.id}')">
+      <i class="ti ${n.icon}" aria-hidden="true"></i>${n.label}
+      ${n.id==='alerts'&&alerts.length?`<span class="alerts-badge">${alerts.length}</span>`:''}
+    </button>`).join('');
 }
-
 async function navigate(v) {
   state.view=v; state.selectedClient=null;
   const labels = {
@@ -460,9 +652,26 @@ async function navigate(v) {
     'client-detail':'Cliente',
   };
   document.getElementById('page-title').textContent = labels[v]||v;
+  document.getElementById('page-title').textContent=NAV_ADMIN.find(n=>n.id===v)?.label||'';
   await loadAll();
 }
 
+function renderNav_cliente() {
+  const alerts = getAlerts();
+  document.getElementById('nav').innerHTML = NAV_CLIENTE.map(n=>`
+    <button class="nav-item ${state.view===n.id||(state.view==='client-detail'&&n.id==='clients')?'active':''}" onclick="navigate_cliente('${n.id}')">
+      <i class="ti ${n.icon}" aria-hidden="true"></i>${n.label}
+      ${n.id==='alerts'&&alerts.length?`<span class="alerts-badge">${alerts.length}</span>`:''}
+    </button>`).join('');
+}
+
+async function navigate_cliente(v) {
+  state.view=v; state.selectedClient=null;
+  document.getElementById('page-title').textContent=NAV_CLIENTE.find(n=>n.id===v)?.label||'';
+  await loadAll();
+}
+
+//--render de admin//
 function render() {
   renderNav();
   const el = document.getElementById('content');
@@ -531,6 +740,97 @@ function getVisibleAlerts() {
   return getAlerts().filter(a => !isAlertDismissed(a.msg));
 }
 
+
+//--render de clientes//
+function renderportalClients() {
+  renderNav_cliente();
+  const el = document.getElementById('content');
+  if(state.view==='eventos')  el.innerHTML=rendereventos();
+  if(state.view==='mis-pagos') el.innerHTML=renderMisPagos();
+  if(state.view==='mis-asistencias') el.innerHTML=renderMisAsistencias();
+  if(state.view==='calendario') el.innerHTML=renderCalendario();
+}
+
+function rendereventos() {
+  return `
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-search">
+          <i class="ti ti-search" style="font-size:14px;color:var(--text3)" aria-hidden="true"></i>
+          <input type="text" placeholder="Buscar evento..." value="${state.searchEvents}" oninput="state.searchEvents=this.value;renderportalClients()" />
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Evento</th></tr></thead>
+        <tbody>${state.events.filter(e=>e.cliente_id===state.selectedClient&&e.nombre.includes(state.searchEvents)).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(e=>{
+          return `<tr><td>${fmt(e.fecha)}</td><td>${e.nombre}</td></tr>`;
+        }).join('')||'<tr><td colspan="2" class="empty">Sin eventos registrados</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderMisPagos() {
+  const filtered = state.pagos.filter(p=>p.cliente_id===state.selectedClient);
+  return `
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-search">
+          <i class="ti ti-search" style="font-size:14px;color:var(--text3)" aria-hidden="true"></i>
+          <input type="text" placeholder="Buscar pago..." value="${state.searchPayments}" oninput="state.searchPayments=this.value;render()" />
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Importe</th><th>Estado</th></tr></thead>
+        <tbody>${filtered.filter(p=>p.fecha.includes(state.searchPayments)).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(p=>{
+          return `<tr><td>${fmt(p.fecha)}</td><td>€${Number(p.monto).toFixed(2)}</td><td>${p.estado}</td></tr>`;
+        }).join('')||'<tr><td colspan="3" class="empty">Sin pagos registrados</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderMisAsistencias() {
+  const filtered = state.asistencia.filter(a=>a.cliente_id===state.selectedClient);
+  return `
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-search">
+          <i class="ti ti-search" style="font-size:14px;color:var(--text3)" aria-hidden="true"></i>
+          <input type="text" placeholder="Buscar asistencia..." value="${state.searchAsistencia}" oninput="state.searchAsistencia=this.value;render()" />
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Fecha</th><th>Hora</th></tr></thead>
+        <tbody>${filtered.filter(a=>a.fecha.includes(state.searchAsistencia)).sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(a=>{
+          return `<tr><td>${fmt(a.fecha)}</td><td>${a.hora}</td></tr>`;
+        }).join('')||'<tr><td colspan="2" class="empty">Sin asistencias registradas</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderCalendario() {
+  const asistencias = state.asistencia.filter(a=>a.cliente_id===state.selectedClient).map(a=>a.fecha);
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  let html = `<div class="cal-wrap"><div class="cal-header"><div class="cal-month">${today.toLocaleDateString('es-ES',{month:'long',year:'numeric'})}</div></div><div class="cal-grid">`;
+  for(let i=0;i<firstDay.getDay();i++) html += `<div class="cal-day empty"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isPresent = asistencias.includes(dateStr);
+    const isToday = dateStr === today.toISOString().slice(0,10);
+    html += `<div class="cal-day ${isPresent?'present':''} ${isToday?'today':''}">${d}</div>`;
+  }
+  html += `</div><div class="cal-legend"><div><span class="cal-legend-dot" style="background:var(--accent)"></span> Asistencia</div></div></div>`;
+  return html;
+}
+
+function misAsistencias() {
+  state.view='mis-asistencias';
+  document.getElementById('page-title').textContent='Mis asistencias';
+  render();
+}
+
+// ── Dashboard ──
 function renderDashboard() {
   const activos = state.clients.filter(c=>c.estado==='Activo').length;
   const pendientes = state.pagos.filter(p=>p.estado==='Pendiente').length;
@@ -584,6 +884,30 @@ function renderClaseCard(c, esAdmin=false) {
     </div>`;
 }
 
+    ${alerts.length?`<div style="margin-bottom:24px"><div class="section-title">Recordatorios activos</div>${alerts.slice(0,4).map(a=>`
+      <div class="alert-card" onclick="openClient(${a.id})">
+        <div class="alert-dot ${a.type}"></div><div class="alert-msg">${a.msg}</div>
+        <i class="ti ti-chevron-right" style="color:var(--text3);font-size:14px" aria-hidden="true"></i>
+      </div>`).join('')}</div>`:''}
+    <div class="section-title" style="margin-bottom:10px">Próximos vencimientos</div>
+    <div class="table-card"><table>
+      <thead><tr><th>Cliente</th><th>Plan</th><th>Importe</th><th>Vence</th><th>Días</th></tr></thead>
+      <tbody>${state.clients.filter(c=>c.estado==='Activo').sort((a,b)=>new Date(a.cobro)-new Date(b.cobro)).slice(0,6).map(c=>{
+        const d=diffDays(today,new Date(c.cobro));
+        const color=d<0?'var(--red)':d<=3?'var(--amber)':'var(--text)';
+        const label=d<0?`hace ${Math.abs(d)}d`:d===0?'hoy':d===1?'mañana':`${d}d`;
+        return `<tr onclick="openClient(${c.id})"><td>${c.nombre}</td><td><span class="badge ${(c.plan||'').toLowerCase()}">${c.plan||'—'}</span></td><td>${c.importe?'€'+Number(c.importe).toFixed(2):'—'}</td><td>${fmt(c.cobro)}</td><td style="color:${color};font-weight:500">${label}</td></tr>`;
+      }).join('')||'<tr><td colspan="5" class="empty">Sin clientes activos</td></tr>'}</tbody>
+    </table></div>`;
+}
+
+//-pantalla entrenador mis clases---//
+function misclasesentrenador(){
+  state.view='Mis_clases';
+  document.getElementById('page-title').textContent='Mis clases';
+  render();
+}
+// ── Clientes pantalla ──
 function renderClients() {
   const filtered = state.clients.filter(c=>c.nombre.toLowerCase().includes(state.searchClients.toLowerCase())||(c.email||'').toLowerCase().includes(state.searchClients.toLowerCase()));
   return `
@@ -604,6 +928,7 @@ function renderClients() {
     </div>`;
 }
 
+// ── Detalle cliente  pantalla──
 function renderClientDetail() {
   const c = state.clients.find(x=>x.id===state.selectedClient);
   if(!c) return '<div class="empty">No encontrado</div>';
@@ -826,6 +1151,8 @@ function renderReservasAdmin() {
     </div>`;
 }
 
+
+// ── Asistencia global pantalla ──
 function renderAsistencia() {
   const hoy = todayStr;
   const asistHoy = state.asistencia.filter(a=>a.fecha===hoy);
@@ -922,6 +1249,15 @@ function renderInventario() {
   // Ventas por producto este mes
   const ventasPorProducto = {};
   ventasMes.forEach(v=>{ if(!ventasPorProducto[v.producto_id]) ventasPorProducto[v.producto_id]={total:0,cantidad:0}; ventasPorProducto[v.producto_id].total+=Number(v.total); ventasPorProducto[v.producto_id].cantidad+=Number(v.cantidad); });
+// ── Pagos globales pantalla ──
+function renderPayments() {
+  const mes = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  const pendientes = state.pagos.filter(p=>p.estado==='Pendiente');
+  const cobrado = state.pagos.filter(p=>p.estado==='Pagado'&&p.fecha.startsWith(mes)).reduce((a,p)=>a+Number(p.monto),0);
+  const enriched = state.pagos.map(p=>{
+    const c=state.clients.find(x=>x.id===p.cliente_id);
+    return {...p,clienteNombre:c?.nombre||'Desconocido'};
+  }).filter(p=>p.clienteNombre.toLowerCase().includes(state.searchPayments.toLowerCase()));
   return `
     <div class="metric-grid" style="margin-bottom:20px">
       <div class="metric"><div class="metric-label">Productos</div><div class="metric-value">${state.productos.length}</div><div class="metric-sub">${stockBajo.length} con stock bajo</div></div>
@@ -1018,6 +1354,16 @@ function renderAlerts() {
 // ═══════════════════════════════════════
 // VISTAS ENTRENADOR
 // ═══════════════════════════════════════
+// ── Inventario pantalla ──
+function renderInventario() {
+  const mes = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`;
+  const ventasMes = state.ventas.filter(v=>v.created_at&&v.created_at.startsWith(mes));
+  const ingresosMes = ventasMes.reduce((a,v)=>a+Number(v.total),0);
+  const gananciasMes = ventasMes.reduce((a,v)=>a+(Number(v.precio_venta)-Number(v.costo))*Number(v.cantidad),0);
+  const stockBajo = state.productos.filter(p=>p.stock<=p.stock_minimo);
+  const filtered = state.productos.filter(p=>
+    p.nombre.toLowerCase().includes((state.searchProductos||'').toLowerCase())
+  );
 
 function renderMisClases() {
   const misClases = state.clases.filter(c=>c.fecha>=todayStr&&c.estado==='activa').slice(0,20);
@@ -1165,6 +1511,9 @@ function renderMiMembresia() {
   if(!memb) return '<div class="empty">No tienes una membresía activa.<br>Contacta con el gimnasio.</div>';
   const usadas=memb.clases_usadas||0; const total=memb.clases_totales||0; const restantes=total-usadas;
   const pct=total>0?Math.round(usadas/total*100):0;
+// ── Alertas pantalla ──
+function renderAlerts() {
+  const alerts = getAlerts();
   return `
     <div class="table-card" style="padding:24px;max-width:480px">
       <div style="text-align:center;margin-bottom:24px">
