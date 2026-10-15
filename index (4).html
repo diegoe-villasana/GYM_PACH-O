@@ -1694,8 +1694,7 @@ function exportarCierreMes() {
   lineas.push(``, `STOCK ACTUAL`);
   lineas.push(`Producto,Stock actual,Stock mínimo,Estado`);
   state.productos.forEach(p=>lineas.push(`${p.nombre},${p.stock},${p.stock_minimo},${p.stock<=p.stock_minimo?'BAJO':'OK'}`));
-  const blob = new Blob([lineas.join('
-')], {type:'text/csv;charset=utf-8;'});
+  const blob = new Blob([lineas.join('\n')], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href=url; a.download=`studio87_cierre_${mes}.csv`; a.click();
   URL.revokeObjectURL(url);
