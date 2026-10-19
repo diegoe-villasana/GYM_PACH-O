@@ -252,11 +252,9 @@ tbody tr:hover td { background: var(--surface2); cursor: pointer; }
 <script src="./config.js"></script>
 
 <script>
-// ── CREDENCIALES ──
-// ⚠️ Esta llave es service_role (acceso total). Cámbiala por la anon/publishable key
-// de Supabase y protege las tablas con RLS.
+
 const SUPABASE_URL = 'https://gfsofbjhmorkgegnbsli.supabase.co';
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdmc29mYmpobW9ya2dlZ25ic2xpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDEzMDUwMywiZXhwIjoyMDk1NzA2NTAzfQ.vJsNUZUeLZZuMheh-cFm-Zl2aMzzbsDzXyN8LnyJkZo";
+const SUPABASE_KEY = "sb_publishable_tbORXjpZr-4W8CzvsN4vZA_5Jkw1NYd";
 const BUCKET = 'Documentos';
 
 const { createClient } = supabase;
@@ -383,12 +381,21 @@ async function setupUser(user) {
     // TODO: crear tu fila admin en "usuarios" y volver a bloquear con:
     //   await db.auth.signOut(); return false;
     console.warn('Acceso admin por defecto: falta la fila de este usuario en la tabla usuarios');
-    setTimeout(()=>toast('⚠️ Entraste como admin por defecto. Pendiente: crear tu fila en "usuarios" y quitar este acceso.','error'), 800);
-    state.rol = 'admin'; state.clienteId = null; state.entrenadorId = null;
+    setTimeout(()=>toast(' Entraste como admin por defecto. Pendiente: crear tu fila en "usuarios" y quitar este acceso.','error'), 800);
+    return false;
   } else {
     state.rol = data.rol;
     state.clienteId = data.cliente_id;
     state.entrenadorId = data.entrenador_id;
+    if (state.rol==='cliente' && !state.clienteId) {
+      console.warn('Usuario cliente sin cliente_id en tabla usuarios');
+      toast('Tu cuenta no tiene cliente_id asignado. Pide al administrador que lo agregue.','error');
+    }
+    if (state.rol==='entrenador' && !state.entrenadorId) {
+      console.warn('Usuario entrenador sin entrenador_id en tabla usuarios');
+      toast('Tu cuenta no tiene entrenador_id asignado. Pide al administrador que lo agregue.','error');
+    }
+    console.log('Usuario cargado:', state.rol, state.clienteId, state.entrenadorId);
   }
   document.getElementById('role-badge').textContent = state.rol;
   return true;
