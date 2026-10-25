@@ -141,6 +141,11 @@ tbody tr:hover td { background: var(--surface2); cursor: pointer; }
 .doc-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--surface2); border-radius: var(--r); margin-bottom: 6px; }
 .doc-item-name { flex: 1; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .doc-item-type { font-size: 11px; color: var(--text3); background: var(--surface); padding: 2px 6px; border-radius: 4px; }
+.registro-screen { position: fixed; inset: 0; background: var(--bg); overflow-y: auto; z-index: 998; padding: 20px; }
+.registro-wrap { max-width: 480px; margin: 0 auto; padding: 20px 0 40px; }
+.registro-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--rl); padding: 24px; }
+.responsiva { background: var(--surface2); border-radius: var(--r); padding: 16px; margin-bottom: 14px; max-height: 200px; overflow-y: auto; font-size: 12px; color: var(--text2); line-height: 1.6; font-family: Arial, sans-serif; }
+.responsiva p { margin-bottom: 10px; }
 @media (max-width: 768px) {
   .sidebar { width: 100%; height: auto; bottom: auto; position: fixed; top: 0; left: 0; right: 0; flex-direction: row; z-index: 50; overflow-x: auto; overflow-y: hidden; padding: 0; border-right: none; border-bottom: 1px solid rgba(232,0,28,0.2); }
   .sidebar.ocultar { height: 0; overflow: hidden; }
@@ -222,6 +227,67 @@ tbody tr:hover td { background: var(--surface2); cursor: pointer; }
     <button class="btn primary" style="width:100%;justify-content:center;margin-top:4px" id="register-btn" onclick="doRegister()">Crear usuario</button>
     <button class="btn" style="width:100%;justify-content:center;margin-top:8px" onclick="showLogin()"><i class="ti ti-arrow-left"></i> Volver a iniciar sesión</button>
     <div class="login-footer">Studio 8:7 · Solo para uso autorizado</div>
+  </div>
+</div>
+
+<!-- REGISTRO POR INVITACIÓN -->
+<div class="registro-screen" id="registro-screen" style="display:none">
+  <div class="registro-wrap">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:28px;font-weight:900;letter-spacing:1px">STUDIO <span style="color:#E8001C">8:7</span></div>
+      <div style="font-size:11px;color:var(--text3);letter-spacing:2px;margin-top:2px">GYM TRAINING</div>
+    </div>
+    <div class="login-error" id="registro-error-global" style="text-align:center;padding:16px;font-size:14px"></div>
+    <div id="registro-form">
+      <div class="registro-card">
+        <div style="font-size:16px;font-weight:700;margin-bottom:4px">Bienvenido a Studio 8:7</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:20px">Completa tu registro para empezar a entrenar.</div>
+        <input type="hidden" id="registro-token" />
+        <div class="login-error" id="registro-error"></div>
+        <div class="form-group"><label class="form-label">Nombre completo *</label><input class="form-input" id="registro-nombre" placeholder="Como aparece en tu ID oficial" /></div>
+        <div class="form-group"><label class="form-label">Email *</label><input class="form-input" id="registro-email" type="email" placeholder="tu@email.com" /></div>
+        <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="registro-tel" type="tel" placeholder="81 0000 0000" /></div>
+        <div class="form-group"><label class="form-label">Género</label>
+          <select class="form-input" id="registro-genero">
+            <option value="">— Selecciona —</option>
+            <option value="Hombre">Hombre</option>
+            <option value="Mujer">Mujer</option>
+            <option value="Prefiero no decir">Prefiero no decir</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Plan *</label><select class="form-input" id="registro-plan"><option value="">Cargando planes...</option></select></div>
+        <div class="form-group"><label class="form-label">Contraseña *</label><input class="form-input" id="registro-pass" type="password" placeholder="Mínimo 6 caracteres" /></div>
+        <div class="form-group"><label class="form-label">Confirmar contraseña *</label><input class="form-input" id="registro-pass2" type="password" placeholder="Repite tu contraseña" /></div>
+        <div class="responsiva">
+          <div style="font-weight:700;color:var(--text);margin-bottom:8px;font-size:13px">CARTA DE RESPONSIVA Y EXENCIÓN DE RESPONSABILIDAD</div>
+          <p>Yo, el suscrito, en pleno uso de mis facultades mentales, declaro lo siguiente:</p>
+          <p><strong>PRIMERO.</strong> Que soy mayor de edad y cuento con plena capacidad jurídica para suscribir el presente documento.</p>
+          <p><strong>SEGUNDO.</strong> Que deseo incorporarme como miembro activo de <strong>Studio 8:7 Gym Training</strong> y participar en las actividades físicas, clases y entrenamientos que se ofrecen en sus instalaciones.</p>
+          <p><strong>TERCERO.</strong> Que declaro estar en condiciones físicas aptas para realizar actividad física de intensidad moderada a alta, y que en caso de padecer alguna condición médica, he consultado previamente con un médico quien me ha autorizado a realizar este tipo de actividades.</p>
+          <p><strong>CUARTO.</strong> Que libero expresamente a Studio 8:7 Gym Training, sus propietarios, directivos, entrenadores y personal, de cualquier responsabilidad civil, penal o de cualquier otra índole, por lesiones, accidentes, daños o perjuicios que pudiera sufrir durante mi estancia y práctica deportiva en las instalaciones del gimnasio, siempre que estos no sean ocasionados por dolo o negligencia grave del personal.</p>
+          <p><strong>QUINTO.</strong> Que me comprometo a seguir las instrucciones del personal del gimnasio, respetar el reglamento interno y hacer uso responsable de las instalaciones y equipos.</p>
+          <p>Fecha de aceptación: <strong id="registro-fecha"></strong></p>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)">
+            <input type="checkbox" id="registro-acepta" style="margin-top:2px;flex-shrink:0;accent-color:#E8001C" />
+            He leído y acepto la carta de responsiva y exención de responsabilidad de Studio 8:7.
+          </label>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Firma electrónica — escribe tu nombre completo *</label>
+          <input class="form-input" id="registro-firma" placeholder="Escribe tu nombre completo para firmar" />
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">Debe coincidir exactamente con el nombre que ingresaste arriba.</div>
+        </div>
+        <button class="btn primary" id="registro-btn" onclick="enviarRegistro()" style="width:100%;justify-content:center;margin-top:8px">Completar registro</button>
+      </div>
+    </div>
+    <div id="registro-exito" style="display:none;text-align:center;padding:32px 20px">
+      <div style="font-size:48px;margin-bottom:16px">✅</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:8px">¡Registro completado!</div>
+      <div style="font-size:14px;color:var(--text2);margin-bottom:24px">Ya eres miembro de Studio 8:7. Si te llega un correo de confirmación, ábrelo y después inicia sesión con tu email y contraseña.</div>
+      <button class="btn primary" onclick="window.location.href=window.location.pathname" style="justify-content:center">Ir al inicio de sesión</button>
+    </div>
   </div>
 </div>
 
@@ -625,7 +691,10 @@ function renderClients() {
     <div class="table-card">
       <div class="table-header">
         <div class="table-search"><i class="ti ti-search" style="color:var(--text3)"></i><input type="text" placeholder="Buscar..." value="${state.searchClients}" oninput="state.searchClients=this.value;render()" /></div>
-        <button class="btn primary" onclick="showModal('new-client')"><i class="ti ti-plus"></i> Nuevo cliente</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn small" onclick="generarEnlaceInvitacion()" title="Enlace de registro de un solo uso para enviárselo al cliente"><i class="ti ti-link"></i> Generar enlace</button>
+          <button class="btn primary" onclick="showModal('new-client')"><i class="ti ti-plus"></i> Nuevo cliente</button>
+        </div>
       </div>
       <table><thead><tr><th>Nombre</th><th class="hide-mobile">Plan</th><th class="hide-mobile">Importe</th><th class="hide-mobile">Cobro</th><th>Estado</th></tr></thead>
       <tbody>${filtered.map(c=>`<tr onclick="openClient(${c.id})">
@@ -1721,9 +1790,95 @@ async function enviarEmailTodosVencen() {
   toast(`${enviados} de ${proximos.length} emails enviados`, enviados?'ok':'error');
 }
 
+// ═══════════ REGISTRO POR INVITACIÓN ═══════════
+async function checkInvitacion() {
+  const token = new URLSearchParams(window.location.search).get('token');
+  if(!token) return false;
+  const {data, error} = await db.from('invitaciones').select('token')
+    .eq('token', token).eq('usado', false).gt('expires_at', new Date().toISOString()).maybeSingle();
+  if(error || !data) mostrarPaginaRegistro(null, 'Este enlace no es válido, ya fue usado o expiró. Pide uno nuevo al gimnasio.');
+  else mostrarPaginaRegistro(token);
+  return true;
+}
+
+function mostrarPaginaRegistro(token, errorMsg) {
+  document.querySelector('.app').style.display='none';
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('register-screen').style.display='none';
+  document.getElementById('registro-screen').style.display='block';
+  if(errorMsg) {
+    const g=document.getElementById('registro-error-global');
+    g.textContent=errorMsg; g.style.display='block';
+    document.getElementById('registro-form').style.display='none';
+    return;
+  }
+  document.getElementById('registro-token').value=token;
+  document.getElementById('registro-fecha').textContent=today.toLocaleDateString('es-MX',{day:'numeric',month:'long',year:'numeric'});
+  cargarPlanesRegistro();
+}
+
+async function cargarPlanesRegistro() {
+  const {data:planes} = await db.from('planes').select('*').eq('activo',true).order('precio');
+  const sel=document.getElementById('registro-plan'); if(!sel) return;
+  sel.innerHTML='<option value="">— Selecciona tu plan —</option>' +
+    (planes||[]).map(p=>`<option value="${p.id}" data-dias="${p.periodo_dias}" data-clases="${p.clases_por_periodo}">${p.nombre} — $${Number(p.precio||0).toFixed(2)} (${p.clases_por_periodo} clases)</option>`).join('');
+}
+
+async function enviarRegistro() {
+  const btn=document.getElementById('registro-btn');
+  const errEl=document.getElementById('registro-error');
+  const v=id=>document.getElementById(id).value.trim();
+  const fail=m=>{ errEl.textContent=m; errEl.style.display='block'; btn.disabled=false; btn.textContent='Completar registro'; };
+  errEl.style.display='none';
+  const nombre=v('registro-nombre'), email=v('registro-email'), tel=v('registro-tel');
+  const genero=v('registro-genero'), planId=v('registro-plan'), firma=v('registro-firma'), token=v('registro-token');
+  const pass=document.getElementById('registro-pass').value, pass2=document.getElementById('registro-pass2').value;
+  const acepta=document.getElementById('registro-acepta').checked;
+  if(!nombre||!email||!pass||!planId||!firma||!acepta) return fail('Completa todos los campos obligatorios y acepta la carta de responsiva.');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Ingresa un email válido.');
+  if(pass.length<6) return fail('La contraseña debe tener al menos 6 caracteres.');
+  if(pass!==pass2) return fail('Las contraseñas no coinciden.');
+  if(firma.toLowerCase()!==nombre.toLowerCase()) return fail('La firma debe coincidir exactamente con tu nombre completo.');
+  btn.disabled=true; btn.textContent='Registrando...';
+  try {
+    const {data:authData, error:authError} = await db.auth.signUp({email, password:pass});
+    if(authError) throw new Error(authError.message);
+    const opt=document.getElementById('registro-plan').selectedOptions[0];
+    const dias=parseInt(opt.dataset.dias)||30, clases=parseInt(opt.dataset.clases)||8;
+    const fechaFin=localISO(addDays(today,dias));
+    const {data:cli, error:cliError} = await db.from('clientes').insert({
+      nombre, email, telefono:tel, genero, inicio:todayStr, cobro:fechaFin,
+      estado:'Activo', documentos:[], firma_electronica:firma, fecha_firma:new Date().toISOString(),
+    }).select().single();
+    if(cliError) throw new Error(cliError.message);
+    const {error:mErr} = await db.from('membresias').insert({ cliente_id:cli.id, plan_id:parseInt(planId), clases_totales:clases, clases_usadas:0, fecha_inicio:todayStr, fecha_fin:fechaFin, estado:'activa' });
+    if(mErr) throw new Error(mErr.message);
+    if(authData.user) {
+      const {error:uErr} = await db.from('usuarios').insert({ id:authData.user.id, cliente_id:cli.id, rol:'cliente' });
+      if(uErr) throw new Error(uErr.message);
+    }
+    await db.from('invitaciones').update({usado:true}).eq('token',token);
+    await db.auth.signOut();
+    document.getElementById('registro-form').style.display='none';
+    document.getElementById('registro-exito').style.display='block';
+  } catch(e) {
+    console.error(e);
+    fail('Error: '+e.message);
+  }
+}
+
+async function generarEnlaceInvitacion() {
+  const {data, error} = await db.from('invitaciones').insert({}).select().single();
+  if(error) { console.error(error); toast('Error al generar enlace','error'); return; }
+  const url = window.location.origin + window.location.pathname + '?token=' + encodeURIComponent(data.token);
+  try { await navigator.clipboard.writeText(url); toast('Enlace copiado ✓ — válido 24 horas','ok'); }
+  catch(e) { prompt('Copia este enlace:', url); }
+}
+
 // ── Arranque ──
 (async()=>{
   document.querySelector('.app').style.display='none';
+  if(await checkInvitacion()) return;
   const {data:{session}}=await db.auth.getSession();
   if(session && await setupUser(session.user)) showApp();
   else document.getElementById('login-screen').style.display='flex';
