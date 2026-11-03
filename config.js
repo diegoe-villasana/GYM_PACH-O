@@ -1,10 +1,6 @@
-<<<<<<< HEAD
+
 
 window.env = {
-  VITE_API_URL: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdmc29mYmpobW9ya2dlZ25ic2xpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDEzMDUwMywiZXhwIjoyMDk1NzA2NTAzfQ.vJsNUZUeLZZuMheh-cFm-Zl2aMzzbsDzXyN8LnyJkZo' // Pon aquí tu URL real
-=======
+  VITE_API_URL: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdmc29mYmpobW9ya2dlZ25ic2xpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMzA1MDMsImV4cCI6MjA5NTcwNjUwM30.iAA_S85DXU1kSYy3D58s8QjBcRf4LE-c9obtwyG6HWA'
 
-window.env = {
-  VITE_API_URL: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdmc29mYmpobW9ya2dlZ25ic2xpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MDEzMDUwMywiZXhwIjoyMDk1NzA2NTAzfQ.vJsNUZUeLZZuMheh-cFm-Zl2aMzzbsDzXyN8LnyJkZo' // Pon aquí tu URL real
->>>>>>> 1fe790c454479ee9e1b54d3c7d6105027a9f7253
 };

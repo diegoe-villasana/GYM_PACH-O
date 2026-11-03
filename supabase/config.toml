@@ -1,0 +1,8 @@
+project_id = "gfsofbjhmorkgegnbsli"
+
+# TotalPass llama al webhook sin JWT de Supabase; se protege con ?key=TP_WEBHOOK_SECRET
+[functions.totalpass-webhook]
+verify_jwt = false
+
+[functions.totalpass-admin]
+verify_jwt = true

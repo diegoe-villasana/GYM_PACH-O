@@ -1797,22 +1797,63 @@ async function enviarRegistro() {
   const btn = document.getElementById('registro-btn');
   const errEl = document.getElementById('registro-error');
   errEl.style.display = 'none';
+
+  const fail = msg => {
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Completar registro';
+  };
+
   const nombre = document.getElementById('registro-nombre').value.trim();
-  const email = document.getElementById('registro-email').value.trim();
-  const tel = document.getElementById('registro-tel').value.trim();
-  const pass = document.getElementById('registro-pass').value;
-  const pass2 = document.getElementById('registro-pass2').value;
+  const email  = document.getElementById('registro-email').value.trim();
+  const tel    = document.getElementById('registro-tel').value.trim();
+  const pass   = document.getElementById('registro-pass').value;
+  const pass2  = document.getElementById('registro-pass2').value;
   const planId = document.getElementById('registro-plan').value;
   const genero = document.getElementById('registro-genero').value;
-  const firma = document.getElementById('registro-firma').value.trim();
+  const firma  = document.getElementById('registro-firma').value.trim();
   const acepta = document.getElementById('registro-acepta').checked;
-  const token = document.getElementById('registro-token').value;
-  if (!nombre||!email||!pass||!planId||!firma||!acepta) { errEl.textContent='Por favor completa todos los campos y acepta los términos.'; errEl.style.display='block'; return; }
-  if (pass !== pass2) { errEl.textContent='Las contraseñas no coinciden.'; errEl.style.display='block'; return; }
-  if (pass.length < 6) { errEl.textContent='La contraseña debe tener al menos 6 caracteres.'; errEl.style.display='block'; return; }
-  if (firma.toLowerCase() !== nombre.toLowerCase()) { errEl.textContent='La firma debe coincidir exactamente con tu nombre completo.'; errEl.style.display='block'; return; }
-  btn.disabled = true; btn.textContent = 'Registrando...';
+  const token  = document.getElementById('registro-token').value;
+
+  if (!nombre || !email || !pass || !planId || !firma || !acepta) return fail('Por favor completa todos los campos y acepta los términos.');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Ingresa un email válido.');
+  if (pass !== pass2) return fail('Las contraseñas no coinciden.');
+  if (pass.length < 6) return fail('La contraseña debe tener al menos 6 caracteres.');
+  if (firma.toLowerCase() !== nombre.toLowerCase()) return fail('La firma debe coincidir exactamente con tu nombre completo.');
+
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+
   try {
+    // 1. Crear el usuario en Auth
+    const { data: authData, error: authError } = await db.auth.signUp({ email, password: pass });
+    if (authError) throw new Error(authError.message);
+    if (!authData.user) throw new Error('No se pudo crear el usuario.');
+
+    // 2. Registrar cliente, membresía y usuario en el servidor (valida el token)
+    const { error: rpcError } = await db.rpc('registrar_por_invitacion', {
+      p_token:    token,
+      p_user_id:  authData.user.id,
+      p_nombre:   nombre,
+      p_email:    email,
+      p_telefono: tel,
+      p_genero:   genero,
+      p_plan_id:  parseInt(planId),
+      p_firma:    firma,
+    });
+    if (rpcError) throw new Error(rpcError.message);
+
+    // 3. Cerrar sesión y mostrar éxito
+    await db.auth.signOut();
+    document.getElementById('registro-form').style.display = 'none';
+    document.getElementById('registro-exito').style.display = 'block';
+  } catch (e) {
+    console.error(e);
+    fail('Error: ' + e.message);
+  }
+}
+
     const { data: authData, error: authError } = await db.auth.signUp({ email, password: pass });
     if (authError) throw new Error(authError.message);
     const userId = authData.user.id;

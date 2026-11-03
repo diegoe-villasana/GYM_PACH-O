@@ -1,0 +1,267 @@
+{
+  "proyecto": "GYM_PACH-O (app_PAcho)",
+  "fecha": "2026-11-02",
+  "documentacion": "https://dev.totalpass.com/llms.txt",
+  "estado_actual": {
+    "frontend": "HTML estático en Netlify (index.html)",
+    "backend": "Supabase (gfsofbjhmorkgegnbsli) + Edge Functions (send-email)",
+    "integracion_totalpass": "Código listo (migración + 2 Edge Functions + UI en Asistencia). Falta: correr SQL, poner secretos, deploy y registrar webhook."
+  },
+  "seguridad_urgente": [
+    {
+      "id": "SEC-1",
+      "tarea": "Rotar la service_role key en Supabase",
+      "detalle": "La llave que termina en ...N8LnyJkZo es service_role (se salta RLS). Está publicada en config.js (Netlify) y en el historial de git.",
+      "donde": "Supabase > Settings > API Keys",
+      "hecho": false
+    },
+    {
+      "id": "SEC-2",
+      "tarea": "Eliminar la service_role de config.js",
+      "detalle": "index.html carga config.js, así que es público. La app ya usa sb_publishable en js/core.js; borrar config.js o reemplazar por la anon (termina en ...obtwyG6HWA).",
+      "archivos": [
+        "config.js",
+        "index.html"
+      ],
+      "hecho": false
+    },
+    {
+      "id": "SEC-3",
+      "tarea": "Eliminar la service_role y la contraseña de script2.js",
+      "detalle": "Usar la anon/publishable para el test de login de k6 y cambiar la contraseña del usuario que aparece en el archivo.",
+      "archivos": [
+        "script2.js"
+      ],
+      "hecho": false
+    },
+    {
+      "id": "SEC-4",
+      "tarea": "Resolver marcadores de merge (<<<<<<< HEAD) — config.js ya resuelto",
+      "archivos": [
+        "config.js",
+        "script2.js",
+        "scriptt.js"
+      ],
+      "hecho": false
+    },
+    {
+      "id": "SEC-5",
+      "tarea": "Limpiar el bloque de admin por defecto en setupUser (ya bloquea; falta signOut y quitar el aviso)",
+      "archivos": [
+        "js/auth.js (setupUser)"
+      ],
+      "hecho": false
+    }
+  ],
+  "requisitos_totalpass": [
+    {
+      "id": "REQ-1",
+      "tarea": "Crear cuenta en el portal de developers de TotalPass",
+      "url": "https://developers.totalpass.com",
+      "hecho": true
+    },
+    {
+      "id": "REQ-2",
+      "tarea": "Obtener partner_api_key",
+      "detalle": "Recibida 2026-11-02 (termina en ...dc85b7e7). Funciona en gym-service-api.totalpass.com (producción); staging respondió 502.",
+      "hecho": true
+    },
+    {
+      "id": "REQ-3",
+      "tarea": "Obtener place_api_key",
+      "detalle": "Recibida 2026-11-02 (termina en ...6015f7). Lugar de prueba DVP-HML-205, plan Plano Portal Developers (0SUUHV7B).",
+      "hecho": true
+    },
+    {
+      "id": "REQ-4",
+      "tarea": "Guardar llaves como secretos de Supabase (nunca en el HTML)",
+      "comando": "npx supabase secrets set TP_PARTNER_API_KEY=... TP_PLACE_API_KEY=... TP_WEBHOOK_SECRET=<aleatorio> TP_BASE=https://gym-service-api.totalpass.com",
+      "hecho": false
+    },
+    {
+      "id": "REQ-5",
+      "tarea": "Preguntar a TotalPass lo que la documentación no especifica",
+      "preguntas": [
+        "Headers y body requeridos en POST /api/v1/webhook_confirmations/{TOKEN} (¿lleva Bearer?)",
+        "Respuesta esperada de nuestro webhook al recibir CHECK_IN_CREATED (¿200 vacío?)",
+        "Reintentos y timeouts del webhook",
+        "Cómo verificar que el webhook viene de TotalPass (firma, IP, secreto)"
+      ],
+      "hecho": false,
+      "resuelto_en_codigo": [
+        "Validación: POST sin body ni Bearer (la doc no pone security); si responde 401/403 se reintenta con Bearer",
+        "Webhook: respondemos 200 JSON; 5xx solo si falla guardar",
+        "TotalPass no firma webhooks → URL con ?key=TP_WEBHOOK_SECRET y solo se aceptan endpoints https://*.totalpass.com/api/v1/webhook_confirmations/",
+        "Duplicados: endpoint es UNIQUE (reintentos no duplican)"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "tarea": "Logo PNG del sistema + URL de walkthrough para clientes",
+      "detalle": "Solo si se registra como partner de software para varios gimnasios.",
+      "opcional": true,
+      "hecho": false
+    }
+  ],
+  "endpoints_totalpass": {
+    "staging_base": "https://gym-service-api.staging.totalpass.com",
+    "produccion_base": "https://gym-service-api.totalpass.com",
+    "auth": {
+      "metodo": "POST",
+      "ruta": "/partner/auth",
+      "body": {
+        "place_api_key": "string",
+        "partner_api_key": "string"
+      },
+      "respuesta_201": "{ partner, place, token (JWT) }",
+      "nota": "El token dura 24 horas; renovarlo antes de expirar."
+    },
+    "crear_webhook": {
+      "metodo": "POST",
+      "ruta": "/partner/webhook/create",
+      "headers": {
+        "Authorization": "Bearer <token>"
+      },
+      "body": {
+        "webhook_url": "string",
+        "webhook_type": "CHECKIN"
+      }
+    },
+    "otros_webhook": [
+      "PUT /partner/webhook/update",
+      "DELETE /partner/webhook/delete/{type}",
+      "GET /partner/webhook/get"
+    ],
+    "evento_recibido": {
+      "type": "CHECK_IN_CREATED",
+      "campos": {
+        "endpoint": "URL de validación a llamar",
+        "check_in": [
+          "started_at",
+          "plan_code",
+          "expires_at"
+        ],
+        "place": [
+          "place",
+          "name",
+          "code"
+        ],
+        "user": [
+          "name",
+          "email",
+          "phone",
+          "document_number",
+          "document_type",
+          "code"
+        ]
+      }
+    },
+    "validar_checkin": {
+      "metodo": "POST",
+      "url": "<endpoint del evento> (ej. https://admin.staging.totalpass.com/api/v1/webhook_confirmations/{TOKEN})",
+      "respuestas": {
+        "200": "Validado",
+        "404": "Token no encontrado",
+        "422": [
+          "check_in_not_available",
+          "check_in_expired_alert"
+        ]
+      }
+    }
+  },
+  "pasos_implementacion": [
+    {
+      "paso": 1,
+      "tarea": "Tabla totalpass_checkins en Supabase",
+      "columnas": {
+        "id": "uuid pk default gen_random_uuid()",
+        "tp_user_code": "text",
+        "nombre": "text",
+        "email": "text",
+        "telefono": "text",
+        "documento": "text",
+        "plan_code": "text",
+        "started_at": "timestamptz",
+        "expires_at": "timestamptz",
+        "endpoint": "text",
+        "estado": "text check in ('pendiente','validado','expirado','error') default 'pendiente'",
+        "respuesta_tp": "jsonb",
+        "payload": "jsonb",
+        "created_at": "timestamptz default now()"
+      },
+      "rls": "Solo rol admin puede leer/actualizar; inserts solo desde Edge Function con service_role",
+      "hecho": "código listo — correr supabase/migrations/20261102000000_totalpass.sql"
+    },
+    {
+      "paso": 2,
+      "tarea": "Tabla totalpass_token para cachear el JWT",
+      "columnas": {
+        "id": "int pk",
+        "token": "text",
+        "expires_at": "timestamptz"
+      },
+      "rls": "Sin acceso desde el cliente",
+      "hecho": "código listo — correr supabase/migrations/20261102000000_totalpass.sql"
+    },
+    {
+      "paso": 3,
+      "tarea": "Opcional: columna origen en asistencia",
+      "sql": "alter table asistencia add column origen text default 'local';",
+      "hecho": "código listo — correr supabase/migrations/20261102000000_totalpass.sql"
+    },
+    {
+      "paso": 4,
+      "tarea": "Edge Function compartida: obtener/renovar token de TotalPass",
+      "archivo": "supabase/functions/_shared/totalpass.ts",
+      "hecho": true
+    },
+    {
+      "paso": 5,
+      "tarea": "Edge Function totalpass-webhook (recibe CHECK_IN_CREATED y guarda en totalpass_checkins como pendiente)",
+      "archivo": "supabase/functions/totalpass-webhook/index.ts",
+      "deploy": "supabase functions deploy totalpass-webhook --no-verify-jwt",
+      "url": "https://gfsofbjhmorkgegnbsli.supabase.co/functions/v1/totalpass-webhook",
+      "hecho": "código listo — falta deploy"
+    },
+    {
+      "paso": 6,
+      "tarea": "Registrar el webhook: botón Conexión → Registrar webhook en Asistencia (o acción registrar de totalpass-admin)",
+      "hecho": false
+    },
+    {
+      "paso": 7,
+      "tarea": "Edge Function totalpass-admin (acciones estado, registrar, validar): solo admin; valida check-in, actualiza estado e inserta asistencia origen=totalpass",
+      "archivo": "supabase/functions/totalpass-admin/index.ts",
+      "hecho": "código listo — falta deploy"
+    },
+    {
+      "paso": 8,
+      "tarea": "UI: sección 'Check-ins TotalPass pendientes' con botón Validar en renderAsistencia()",
+      "archivo_vista": "js/vistas/totalpass.js (sección dentro de renderAsistencia)",
+      "archivo": "js/acciones/totalpass.js",
+      "hecho": true
+    },
+    {
+      "paso": 9,
+      "tarea": "Probar en staging con unidad de prueba (check-in válido, expirado, token inválido)",
+      "hecho": false
+    },
+    {
+      "paso": 10,
+      "tarea": "Producción real: pedir a TotalPass las llaves del gimnasio real (las actuales son del lugar de prueba DVP-HML-205), actualizar secretos y volver a registrar el webhook",
+      "hecho": false
+    }
+  ],
+  "fase_2_opcional_booking_api": {
+    "descripcion": "Publicar las clases del gym en TotalPass para que sus usuarios reserven",
+    "base_produccion": "https://booking-api.totalpass.com",
+    "base_staging": "https://booking-api.staging.totalpass.com",
+    "auth": "POST /partner/auth (mismas llaves)",
+    "tareas": [
+      "Sincronizar tabla clases con POST /partner/events y /partner/event-occurrence",
+      "Suscribirse a webhooks de reservas (POST /partner/webhook/subscribe)",
+      "Reflejar reservas TotalPass en tabla reservas",
+      "Confirmar/cancelar slots (PUT /partner/slot/confirmSlot/{slotId}, DELETE /partner/slot/{slotId})"
+    ]
+  }
+}
