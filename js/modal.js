@@ -78,14 +78,26 @@ function renderModal() {
   }
   if(type==='nueva-clase') {
     inner=`<div class="modal-title">Nueva clase ${X_BTN}</div>
-      <div class="form-group"><label class="form-label">Tipo de clase</label><select class="form-input" id="f-ctipo">${state.tiposClase.map(t=>`<option value="${t.id}">${t.nombre}</option>`).join('')||'<option value="">— Crea primero un tipo de clase —</option>'}</select></div>
+      <div class="form-group"><label class="form-label">Tipo de clase</label><select class="form-input" id="f-ctipo" onchange="actualizarDuracionRec()">${state.tiposClase.map(t=>`<option value="${t.id}" data-dur="${t.duracion_minutos||60}">${t.nombre}</option>`).join('')||'<option value="">— Crea primero un tipo de clase —</option>'}</select></div>
       <div class="form-group"><label class="form-label">Entrenador</label><select class="form-input" id="f-centrenador">${state.entrenadores.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('')||'<option value="">— Crea primero un entrenador —</option>'}</select></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Fecha</label><input class="form-input" id="f-cfecha" type="date" value="${state.clasesFecha}" /></div>
-      <div class="form-group"><label class="form-label">Capacidad máxima</label><input class="form-input" id="f-ccap" type="number" value="8" /></div></div>
-      <div class="form-row"><div class="form-group"><label class="form-label">Hora inicio</label><input class="form-input" id="f-cinicio" type="time" value="08:00" /></div>
-      <div class="form-group"><label class="form-label">Hora fin</label><input class="form-input" id="f-cfin" type="time" value="09:00" /></div></div>
-      <div class="form-group"><label class="form-label">Notas</label><textarea class="form-input" id="f-cnotas" style="min-height:60px;resize:vertical"></textarea></div>
-      <div class="form-actions">${CANCEL_BTN}<button class="btn primary" id="save-btn" onclick="saveNuevaClase()">Crear clase</button></div>`;
+      <div class="form-group"><label class="form-label">Capacidad máxima</label><input class="form-input" id="f-ccap" type="number" value="8" min="1" /></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;color:var(--text2)"><input type="checkbox" id="f-crepetir" onchange="toggleRepetirClase()" style="accent-color:#E8001C" /> Repetir semanalmente (crear varias clases de una vez)</label></div>
+      <div id="bloque-unica">
+        <div class="form-group"><label class="form-label">Fecha</label><input class="form-input" id="f-cfecha" type="date" value="${state.clasesFecha}" /></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Hora inicio</label><input class="form-input" id="f-cinicio" type="time" value="08:00" /></div>
+        <div class="form-group"><label class="form-label">Hora fin</label><input class="form-input" id="f-cfin" type="time" value="09:00" /></div></div>
+      </div>
+      <div id="bloque-repetir" style="display:none">
+        <div class="form-group"><label class="form-label">Días de la semana</label><div id="rec-dias" style="display:flex;gap:6px;flex-wrap:wrap"></div></div>
+        <div class="form-group"><label class="form-label">Horarios (toca los que quieras)</label><div id="rec-horas" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center"><input class="form-input" id="rec-hora-custom" type="time" style="width:130px" /><button type="button" class="btn small" onclick="recAgregarHora()">Añadir otra hora</button></div></div>
+        <div class="form-row"><div class="form-group"><label class="form-label">Desde</label><input class="form-input" id="f-rdesde" type="date" oninput="actualizarResumenRec()" /></div>
+        <div class="form-group"><label class="form-label">Hasta</label><input class="form-input" id="f-rhasta" type="date" oninput="actualizarResumenRec()" /></div></div>
+        <div class="form-group"><label class="form-label">Duración de cada clase (min)</label><input class="form-input" id="f-rdur" type="number" value="60" min="5" step="5" /></div>
+        <div id="rec-resumen" style="background:var(--surface2);border-radius:var(--r);padding:12px;font-size:13px;color:var(--text2);margin-bottom:4px"></div>
+      </div>
+      <div class="form-group" style="margin-top:14px"><label class="form-label">Notas</label><textarea class="form-input" id="f-cnotas" style="min-height:60px;resize:vertical"></textarea></div>
+      <div class="form-actions">${CANCEL_BTN}<button class="btn primary" id="save-btn" onclick="guardarClaseModal()">Crear clase</button></div>`;
   }
   if(type==='editar-clase'&&cl) {
     inner=`<div class="modal-title">Editar clase ${X_BTN}</div>
@@ -162,4 +174,5 @@ function renderModal() {
   if(type==='nueva-membresia'||type==='nueva-membresia-global') setTimeout(actualizarClasesPlan, 50);
   if(type==='nueva-venta') setTimeout(resetPrecioVenta, 50);
   if(type==='venta-rapida') setTimeout(actualizarPrecioVenta, 50);
+  if(type==='nueva-clase') setTimeout(initClaseRecurrente, 50);
 }
