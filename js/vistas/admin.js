@@ -374,7 +374,7 @@ function renderInventario() {
   const ventasMesAnt = state.ventas.filter(v=>v.created_at?.startsWith(mesAnterior));
   const ingresos = ventasMes.reduce((a,v)=>a+Number(v.total),0);
   const ingresosMesAnt = ventasMesAnt.reduce((a,v)=>a+Number(v.total),0);
-  const ganancias = ventasMes.reduce((a,v)=>a+(Number(v.precio_venta)-Number(v.costo))*Number(v.cantidad),0);
+  const ganancias = ventasMes.reduce((a,v)=>a+gananciaVenta(v),0);
   const stockBajo = state.productos.filter(p=>p.stock<=p.stock_minimo);
   const q = (state.searchProductos||'').toLowerCase();
   const filtered = state.productos.filter(p=>p.nombre.toLowerCase().includes(q));
@@ -385,7 +385,7 @@ function renderInventario() {
     <div class="metric-grid" style="margin-bottom:20px">
       <div class="metric"><div class="metric-label">Productos</div><div class="metric-value">${state.productos.length}</div><div class="metric-sub">${stockBajo.length} con stock bajo</div></div>
       <div class="metric"><div class="metric-label">Ventas este mes</div><div class="metric-value">$${ingresos.toFixed(0)}</div><div class="metric-sub">${varPct!==null?`${varPct>=0?'▲':'▼'} ${Math.abs(varPct)}% vs mes ant.`:`${ventasMes.length} transacciones`}</div></div>
-      <div class="metric"><div class="metric-label">Ganancia mes</div><div class="metric-value" style="color:var(--green)">$${ganancias.toFixed(0)}</div><div class="metric-sub">margen neto</div></div>
+      <div class="metric"><div class="metric-label">Ganancia mes</div><div class="metric-value" style="color:var(--green)">$${ganancias.toFixed(0)}</div><div class="metric-sub">neto de comisiones</div></div>
       <div class="metric"><div class="metric-label">Mes anterior</div><div class="metric-value" style="color:var(--text2)">$${ingresosMesAnt.toFixed(0)}</div><div class="metric-sub">${ventasMesAnt.length} ventas</div></div>
     </div>
     ${stockBajo.length?`<div style="margin-bottom:20px"><div class="section-title">⚠️ Stock bajo</div>${stockBajo.map(p=>`
@@ -434,10 +434,12 @@ function renderInventario() {
         }).join('')}</tbody></table></div>
       </div>`:''}
     ${state.ventas.length?`<div style="margin-top:20px"><div class="section-title">Últimas ventas</div>
-      <div class="table-card"><table><thead><tr><th>Producto</th><th>Cant.</th><th>Total</th><th class="hide-mobile">Fecha</th></tr></thead>
+      <div class="table-card"><table><thead><tr><th>Producto</th><th>Cant.</th><th>Total</th><th>Pago</th><th class="hide-mobile">Ganancia</th><th class="hide-mobile">Fecha</th></tr></thead>
       <tbody>${state.ventas.slice(0,10).map(v=>{const p=state.productos.find(x=>x.id===v.producto_id);return `<tr>
         <td style="font-weight:700">${p?.nombre||'—'}</td><td>${v.cantidad}</td>
         <td style="font-weight:700;color:var(--green)">$${Number(v.total).toFixed(2)}</td>
+        <td>${v.metodo_pago==='tarjeta'?'<i class="ti ti-credit-card"></i> Tarjeta':'<i class="ti ti-cash"></i> Efectivo'}</td>
+        <td class="hide-mobile" style="color:var(--green)">$${gananciaVenta(v).toFixed(2)}</td>
         <td class="hide-mobile" style="color:var(--text2)">${v.created_at?fmt(localISO(v.created_at)):'—'}</td>
       </tr>`;}).join('')}</tbody></table></div></div>`:''}`;
 }
@@ -469,4 +471,3 @@ function renderAlerts() {
         <button class="btn small" onclick="dismissAlert('${a.key}',event)" title="Descartar alerta" style="flex-shrink:0"><i class="ti ti-x"></i></button>
       </div>`).join('') : '<div class="empty">Sin alertas activas ✅<br><br><span style="font-size:12px;color:var(--text3)">Las alertas se reinician cada día automáticamente</span></div>'}`;
 }
-
