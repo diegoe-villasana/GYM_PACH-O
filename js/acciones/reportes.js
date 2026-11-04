@@ -5,15 +5,21 @@ function exportarCierreMes() {
   const mes = todayStr.slice(0,7);
   const ventasMes = state.ventas.filter(v=>v.created_at?.startsWith(mes));
   const ingresos = ventasMes.reduce((a,v)=>a+Number(v.total),0);
-  const ganancias = ventasMes.reduce((a,v)=>a+(Number(v.precio_venta)-Number(v.costo))*Number(v.cantidad),0);
+  const ganancias = ventasMes.reduce((a,v)=>a+gananciaVenta(v),0);
+  const comisiones = ventasMes.reduce((a,v)=>a+Number(v.comision||0),0);
+  const totalEfectivo = ventasMes.filter(v=>v.metodo_pago!=='tarjeta').reduce((a,v)=>a+Number(v.total),0);
+  const totalTarjeta = ventasMes.filter(v=>v.metodo_pago==='tarjeta').reduce((a,v)=>a+Number(v.total),0);
   const lineas = [
     'STUDIO 8:7 — CIERRE DE MES', `Período: ${mes}`, `Fecha de exportación: ${todayStr}`, '',
-    'RESUMEN', `Total ventas: $${ingresos.toFixed(2)}`, `Ganancia neta: $${ganancias.toFixed(2)}`,
+    'RESUMEN', `Total ventas: $${ingresos.toFixed(2)}`,
+    `Ventas en efectivo: $${totalEfectivo.toFixed(2)}`, `Ventas con tarjeta: $${totalTarjeta.toFixed(2)}`,
+    `Comisiones de tarjeta: $${comisiones.toFixed(2)}`,
+    `Ganancia neta (después de comisiones): $${ganancias.toFixed(2)}`,
     `Número de transacciones: ${ventasMes.length}`, '',
     'VENTAS POR PRODUCTO', 'Producto,Unidades vendidas,Total ($),Ganancia ($)',
   ];
   const por = {};
-  ventasMes.forEach(v=>{ const o=por[v.producto_id]||(por[v.producto_id]={total:0,cantidad:0,ganancia:0}); o.total+=Number(v.total); o.cantidad+=Number(v.cantidad); o.ganancia+=(Number(v.precio_venta)-Number(v.costo))*Number(v.cantidad); });
+  ventasMes.forEach(v=>{ const o=por[v.producto_id]||(por[v.producto_id]={total:0,cantidad:0,ganancia:0}); o.total+=Number(v.total); o.cantidad+=Number(v.cantidad); o.ganancia+=gananciaVenta(v); });
   const q = s => `"${String(s).replace(/"/g,'""')}"`;
   Object.entries(por).sort((a,b)=>b[1].total-a[1].total).forEach(([pid,v])=>{ const p=state.productos.find(x=>x.id==pid); lineas.push(`${q(p?.nombre||'—')},${v.cantidad},${v.total.toFixed(2)},${v.ganancia.toFixed(2)}`); });
   lineas.push('', 'STOCK ACTUAL', 'Producto,Stock actual,Stock mínimo,Estado');
@@ -67,4 +73,3 @@ async function enviarEmailTodosVencen() {
   for(const c of proximos) { if(await enviarEmailVencimiento(c,true)) enviados++; }
   toast(`${enviados} de ${proximos.length} emails enviados`, enviados?'ok':'error');
 }
-
