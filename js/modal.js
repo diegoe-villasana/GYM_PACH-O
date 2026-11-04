@@ -142,7 +142,10 @@ function renderModal() {
     inner=`<div class="modal-title">Vender — ${p.nombre} ${X_BTN}</div>
       <div class="form-group"><label class="form-label">Stock</label><input class="form-input" disabled value="${p.stock} unidades" /></div>
       <div class="form-group"><label class="form-label">Precio</label><input class="form-input" disabled value="$${p.precio_venta}" /></div>
-      <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" id="f-vcantidad" type="number" value="1" min="1" max="${p.stock}" /></div>
+      <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" id="f-vcantidad" type="number" value="1" min="1" max="${p.stock}" oninput="actualizarPrecioVenta()" /></div>
+      <input type="hidden" id="f-vprod" value="${p.id}" /><input type="hidden" id="f-vprecio" value="${p.precio_venta}" />
+      ${campoMetodoPago()}
+      <div id="venta-total" style="background:var(--surface2);border-radius:var(--r);padding:12px;font-size:14px;color:var(--text2);margin-bottom:4px"></div>
       <div class="form-actions">${CANCEL_BTN}<button class="btn primary" id="save-btn" onclick="registrarVentaRapida(${p.id})">Registrar</button></div>`;
   }
   if(type==='nueva-venta') {
@@ -150,6 +153,7 @@ function renderModal() {
       <div class="form-group"><label class="form-label">Producto *</label><select class="form-input" id="f-vprod" onchange="resetPrecioVenta()">${state.productos.map(x=>`<option value="${x.id}" data-precio="${x.precio_venta}" data-stock="${x.stock}">${x.nombre} (stock: ${x.stock})</option>`).join('')}</select></div>
       <div class="form-row"><div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" id="f-vcantidad" type="number" value="1" min="1" oninput="actualizarPrecioVenta()" /></div>
       <div class="form-group"><label class="form-label">Precio unitario ($)</label><input class="form-input" id="f-vprecio" type="number" step="0.01" oninput="actualizarPrecioVenta()" /></div></div>
+      ${campoMetodoPago()}
       <div id="venta-total" style="background:var(--surface2);border-radius:var(--r);padding:12px;font-size:14px;color:var(--text2);margin-bottom:4px"></div>
       <div class="form-actions">${CANCEL_BTN}<button class="btn primary" id="save-btn" onclick="registrarVenta()">Registrar</button></div>`;
   }
@@ -157,5 +161,5 @@ function renderModal() {
   root.innerHTML=`<div class="modal-overlay" onclick="event.target===this&&closeModal()"><div class="modal">${inner}</div></div>`;
   if(type==='nueva-membresia'||type==='nueva-membresia-global') setTimeout(actualizarClasesPlan, 50);
   if(type==='nueva-venta') setTimeout(resetPrecioVenta, 50);
+  if(type==='venta-rapida') setTimeout(actualizarPrecioVenta, 50);
 }
-
