@@ -4,6 +4,9 @@ function renderDashboard() {
   const pendientes = state.pagos.filter(p=>p.estado==='Pendiente').length;
   const mes = todayStr.slice(0,7);
   const ingresos = state.pagos.filter(p=>p.estado==='Pagado'&&p.fecha?.startsWith(mes)).reduce((a,p)=>a+Number(p.monto),0);
+  const ventasMesDash = state.ventas.filter(v=>v.created_at?.startsWith(mes));
+  const ventasProd = ventasMesDash.reduce((a,v)=>a+Number(v.total),0);
+  const gananciaProd = ventasMesDash.reduce((a,v)=>a+gananciaVenta(v),0);
   const clasesHoy = state.clases.filter(c=>c.fecha===todayStr&&c.estado==='activa');
   const reservasHoy = state.reservas.filter(r=>clasesHoy.find(c=>c.id===r.clase_id)&&r.estado!=='cancelada').length;
   const va = getVisibleAlerts();
@@ -11,7 +14,9 @@ function renderDashboard() {
     <div class="metric-grid">
       <div class="metric"><div class="metric-label">Clientes activos</div><div class="metric-value">${activos}</div><div class="metric-sub">de ${state.clients.length} totales</div></div>
       <div class="metric"><div class="metric-label">Pagos pendientes</div><div class="metric-value" style="color:var(--amber)">${pendientes}</div></div>
-      <div class="metric"><div class="metric-label">Ingresos del mes</div><div class="metric-value">$${ingresos.toFixed(0)}</div></div>
+      <div class="metric"><div class="metric-label">Ingresos del mes</div><div class="metric-value">$${ingresos.toFixed(0)}</div><div class="metric-sub">membresías</div></div>
+      <div class="metric"><div class="metric-label">Ventas productos</div><div class="metric-value">$${ventasProd.toFixed(0)}</div><div class="metric-sub">${ventasMesDash.length} ventas este mes</div></div>
+      <div class="metric"><div class="metric-label">Ganancia productos</div><div class="metric-value" style="color:var(--green)">$${gananciaProd.toFixed(0)}</div><div class="metric-sub">neto de comisiones</div></div>
       <div class="metric"><div class="metric-label">Clases hoy</div><div class="metric-value" style="color:#E8001C">${clasesHoy.length}</div><div class="metric-sub">${reservasHoy} reservas</div></div>
     </div>
     ${va.length?`<div style="margin-bottom:20px">
